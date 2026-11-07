@@ -1,10 +1,23 @@
 package sv.edu.itca.joblink.repository;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import sv.edu.itca.joblink.data.remote.SupabaseClient;
+import sv.edu.itca.joblink.data.remote.dto.CategoriaOficioDto;
+import sv.edu.itca.joblink.data.remote.dto.ConversacionDto;
+import sv.edu.itca.joblink.data.remote.dto.MensajeDto;
+import sv.edu.itca.joblink.data.remote.dto.PerfilTrabajadorDto;
+import sv.edu.itca.joblink.data.remote.dto.PortafolioTrabajoDto;
+import sv.edu.itca.joblink.data.remote.dto.SolicitudTrabajoDto;
+import sv.edu.itca.joblink.data.remote.dto.UsuarioDto;
 import sv.edu.itca.joblink.model.ChatConversation;
 import sv.edu.itca.joblink.model.ChatMessage;
 import sv.edu.itca.joblink.model.TradeCategory;
@@ -12,6 +25,7 @@ import sv.edu.itca.joblink.model.User;
 import sv.edu.itca.joblink.model.WorkOrder;
 
 public class JobLinkRepository {
+    private static final String TAG = "JobLinkRepository";
     private static JobLinkRepository instance;
 
     private User currentUser;
@@ -21,14 +35,23 @@ public class JobLinkRepository {
     private final List<ChatConversation> conversations = new ArrayList<>();
     private final Map<String, List<ChatMessage>> chatMessagesMap = new HashMap<>();
 
+    public interface RepositoryCallback<T> {
+        void onSuccess(T result);
+        void onError(String message);
+    }
+
     private JobLinkRepository() {
         initCategories();
         initWorkers();
         initWorkOrders();
         initConversations();
-        
+
         // Default current user: Carlos G. (Worker)
         currentUser = workers.get(0);
+
+        // Sync with Supabase on startup
+        fetchCategoriesFromSupabase(null);
+        fetchWorkersFromSupabase(null);
     }
 
     public static synchronized JobLinkRepository getInstance() {
@@ -39,26 +62,22 @@ public class JobLinkRepository {
     }
 
     private void initCategories() {
-        // Construcción y Mejoras del Hogar
         categories.add(new TradeCategory("c1", "Albañilería y Enchapado", "Construcción y Mejoras del Hogar", "Muros, aceras, cerámica y remodelaciones"));
         categories.add(new TradeCategory("c2", "Carpintería y Ebanistería", "Construcción y Mejoras del Hogar", "Muebles a medida, puertas, closets"));
         categories.add(new TradeCategory("c3", "Balconería y Soldadura", "Construcción y Mejoras del Hogar", "Portones, balcones y estructuras metálicas"));
         categories.add(new TradeCategory("c4", "Cielo Falso y Tabla Yeso", "Construcción y Mejoras del Hogar", "Gypsum, cielo falso e iluminación empotrada"));
         categories.add(new TradeCategory("c5", "Pintura e Impermeabilización", "Construcción y Mejoras del Hogar", "Pintura de fachadas, impermeabilización de techos"));
 
-        // Instalaciones y Mantenimiento Técnico
         categories.add(new TradeCategory("c6", "Fontanería", "Instalaciones y Mantenimiento Técnico", "Reparación de fugas, cañerías, sanitarios y tanques"));
         categories.add(new TradeCategory("c7", "Electricidad Residencial", "Instalaciones y Mantenimiento Técnico", "Cableado, cajas térmicas, ventiladores y duchas"));
         categories.add(new TradeCategory("c8", "Aire Acondicionado", "Instalaciones y Mantenimiento Técnico", "Instalación y mantenimiento de minisplits"));
         categories.add(new TradeCategory("c9", "Reparación de Línea Blanca", "Instalaciones y Mantenimiento Técnico", "Refrigeradoras, lavadoras y cocinas a domicilio"));
         categories.add(new TradeCategory("c10", "Cerrajería", "Instalaciones y Mantenimiento Técnico", "Aperturas de emergencia y cambio de chapas"));
 
-        // Textiles, Calzado y Tapicería
         categories.add(new TradeCategory("c11", "Costura y Sastrería", "Textiles, Calzado y Tapicería", "Prendas a medida, uniformes y ajustes de ropa"));
         categories.add(new TradeCategory("c12", "Tapicería", "Textiles, Calzado y Tapicería", "Restauración de juegos de sala y asientos de autos"));
         categories.add(new TradeCategory("c13", "Zapatería Artesanal", "Textiles, Calzado y Tapicería", "Reparación de calzado, bolsos y mochilas"));
 
-        // Exteriores y Servicios del Hogar
         categories.add(new TradeCategory("c14", "Jardinería y Poda", "Exteriores y Servicios del Hogar", "Corte de grama, diseño de jardines y poda"));
         categories.add(new TradeCategory("c15", "Limpieza Especializada", "Exteriores y Servicios del Hogar", "Lavado en seco de muebles, alfombras y cisternas"));
         categories.add(new TradeCategory("c16", "Control de Plagas", "Exteriores y Servicios del Hogar", "Fumigación de casas y tratamiento de termitas"));
@@ -72,18 +91,11 @@ public class JobLinkRepository {
         carlos.getPortfolioPhotos().add("Mesa de comedor de caoba");
         carlos.getPortfolioPhotos().add("Restauración de silla antigua");
         carlos.getPortfolioPhotos().add("Closet a medida con espejo");
-        carlos.getPortfolioPhotos().add("Gabinete de cocina moderno");
-        carlos.getPortfolioPhotos().add("Puerta principal de cedro");
-        carlos.getPortfolioPhotos().add("Estante flotante de madera");
 
         User marta = new User("w2", "Marta L.", "marta@joblink.sv", User.Role.WORKER, 
                 "Costurera", "Costura y Sastrería", "Santa Ana Centro", 
                 "Descripción del Taller de Costura: Especialistas en vestidos de gala, trajes a medida y confección de alta calidad.", 
                 4.8, 42, true, "+503 7234-5678");
-        marta.getPortfolioPhotos().add("Vestido de noche elegante");
-        marta.getPortfolioPhotos().add("Traje de saco y pantalón");
-        marta.getPortfolioPhotos().add("Ajuste de vestidos de novia");
-        marta.getPortfolioPhotos().add("Uniformes escolares");
 
         User pedro = new User("w3", "Pedro R.", "pedro@joblink.sv", User.Role.WORKER, 
                 "Albañil y Enchapador", "Albañilería y Enchapado", "Santa Ana, Col. El Palmar", 
@@ -119,29 +131,167 @@ public class JobLinkRepository {
         chatMessagesMap.put("conv1", martaMessages);
     }
 
-    public User getCurrentUser() {
-        return currentUser;
+    // --- SUPABASE API CALLS ---
+
+    public void fetchCategoriesFromSupabase(RepositoryCallback<List<TradeCategory>> callback) {
+        SupabaseClient.getApi().getCategoriasOficios().enqueue(new Callback<List<CategoriaOficioDto>>() {
+            @Override
+            public void onResponse(Call<List<CategoriaOficioDto>> call, Response<List<CategoriaOficioDto>> response) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    categories.clear();
+                    for (CategoriaOficioDto dto : response.body()) {
+                        categories.add(new TradeCategory(
+                                String.valueOf(dto.id),
+                                dto.nombre,
+                                "General",
+                                dto.descripcion != null ? dto.descripcion : ""
+                        ));
+                    }
+                    if (callback != null) callback.onSuccess(categories);
+                } else if (response.isSuccessful() && (response.body() == null || response.body().isEmpty())) {
+                    seedCategoriesToSupabase();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<CategoriaOficioDto>> call, Throwable t) {
+                Log.e(TAG, "Failed fetching categories from Supabase: " + t.getMessage());
+                if (callback != null) callback.onError(t.getMessage());
+            }
+        });
     }
 
-    public void setCurrentUser(User user) {
-        this.currentUser = user;
+    private void seedCategoriesToSupabase() {
+        for (TradeCategory cat : categories) {
+            CategoriaOficioDto dto = new CategoriaOficioDto(cat.getName(), cat.getDescription(), "");
+            SupabaseClient.getApi().createCategoriaOficio(dto).enqueue(new Callback<List<CategoriaOficioDto>>() {
+                @Override
+                public void onResponse(Call<List<CategoriaOficioDto>> call, Response<List<CategoriaOficioDto>> response) {}
+                @Override
+                public void onFailure(Call<List<CategoriaOficioDto>> call, Throwable t) {}
+            });
+        }
     }
 
-    public List<TradeCategory> getCategories() {
-        return categories;
+    public void fetchWorkersFromSupabase(RepositoryCallback<List<User>> callback) {
+        SupabaseClient.getApi().getPerfilesTrabajadores().enqueue(new Callback<List<PerfilTrabajadorDto>>() {
+            @Override
+            public void onResponse(Call<List<PerfilTrabajadorDto>> call, Response<List<PerfilTrabajadorDto>> response) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    List<User> loadedWorkers = new ArrayList<>();
+                    for (PerfilTrabajadorDto dto : response.body()) {
+                        String name = dto.usuario != null && dto.usuario.nombreCompleto != null ? dto.usuario.nombreCompleto : "Trabajador";
+                        String email = dto.usuario != null && dto.usuario.email != null ? dto.usuario.email : "user@joblink.sv";
+                        String phone = dto.usuario != null && dto.usuario.telefono != null ? dto.usuario.telefono : "+503 7000-0000";
+                        String location = dto.usuario != null && dto.usuario.ubicacion != null ? dto.usuario.ubicacion : "Santa Ana";
+                        String trade = dto.categoria != null && dto.categoria.nombre != null ? dto.categoria.nombre : "General";
+
+                        User w = new User(
+                                dto.usuarioId != null ? dto.usuarioId : "w_" + dto.id,
+                                name, email, User.Role.WORKER, trade, trade, location,
+                                dto.descripcionProfesional != null ? dto.descripcionProfesional : "Servicio profesional en Santa Ana",
+                                dto.calificacionPromedio != null ? dto.calificacionPromedio : 5.0,
+                                12, true, phone
+                        );
+                        loadedWorkers.add(w);
+                    }
+                    if (!loadedWorkers.isEmpty()) {
+                        workers.clear();
+                        workers.addAll(loadedWorkers);
+                    }
+                    if (callback != null) callback.onSuccess(workers);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<PerfilTrabajadorDto>> call, Throwable t) {
+                Log.e(TAG, "Failed fetching workers from Supabase: " + t.getMessage());
+                if (callback != null) callback.onError(t.getMessage());
+            }
+        });
     }
 
-    public List<User> getWorkers() {
-        return workers;
+    public void registerUserInSupabase(User user, String password, RepositoryCallback<User> callback) {
+        String roleStr = user.getRole() == User.Role.WORKER ? "trabajador" : "cliente";
+        UsuarioDto userDto = new UsuarioDto(
+                user.getName(),
+                user.getEmail(),
+                password != null ? password : "defaultPassword123",
+                user.getPhone() != null ? user.getPhone() : "+503 7000-0000",
+                user.getLocation() != null ? user.getLocation() : "Santa Ana",
+                roleStr
+        );
+
+        SupabaseClient.getApi().createUsuario(userDto).enqueue(new Callback<List<UsuarioDto>>() {
+            @Override
+            public void onResponse(Call<List<UsuarioDto>> call, Response<List<UsuarioDto>> response) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    UsuarioDto created = response.body().get(0);
+                    user.setId(created.id);
+                    currentUser = user;
+
+                    if (user.getRole() == User.Role.WORKER) {
+                        PerfilTrabajadorDto profileDto = new PerfilTrabajadorDto(created.id, 1, user.getBio());
+                        SupabaseClient.getApi().createPerfilTrabajador(profileDto).enqueue(new Callback<List<PerfilTrabajadorDto>>() {
+                            @Override
+                            public void onResponse(Call<List<PerfilTrabajadorDto>> c, Response<List<PerfilTrabajadorDto>> r) {
+                                workers.add(user);
+                                if (callback != null) callback.onSuccess(user);
+                            }
+
+                            @Override
+                            public void onFailure(Call<List<PerfilTrabajadorDto>> c, Throwable t) {
+                                workers.add(user);
+                                if (callback != null) callback.onSuccess(user);
+                            }
+                        });
+                    } else {
+                        if (callback != null) callback.onSuccess(user);
+                    }
+                } else {
+                    currentUser = user;
+                    if (user.getRole() == User.Role.WORKER) workers.add(user);
+                    if (callback != null) callback.onSuccess(user);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<UsuarioDto>> call, Throwable t) {
+                Log.e(TAG, "Error creating user in Supabase: " + t.getMessage());
+                currentUser = user;
+                if (user.getRole() == User.Role.WORKER) workers.add(user);
+                if (callback != null) callback.onSuccess(user);
+            }
+        });
     }
 
-    public List<WorkOrder> getWorkOrders() {
-        return workOrders;
+    public void addChatMessageToSupabase(String conversationId, String text) {
+        MensajeDto dto = new MensajeDto(
+                conversationId.equals("conv1") ? "a1b2c3d4-e5f6-7890-1234-567890abcdef" : conversationId,
+                currentUser.getId() != null ? currentUser.getId() : "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                text
+        );
+
+        SupabaseClient.getApi().sendMensaje(dto).enqueue(new Callback<List<MensajeDto>>() {
+            @Override
+            public void onResponse(Call<List<MensajeDto>> call, Response<List<MensajeDto>> response) {
+                Log.d(TAG, "Message synced with Supabase!");
+            }
+
+            @Override
+            public void onFailure(Call<List<MensajeDto>> call, Throwable t) {
+                Log.e(TAG, "Message sync error: " + t.getMessage());
+            }
+        });
     }
 
-    public List<ChatConversation> getConversations() {
-        return conversations;
-    }
+    // Getters
+    public User getCurrentUser() { return currentUser; }
+    public void setCurrentUser(User user) { this.currentUser = user; }
+    public List<TradeCategory> getCategories() { return categories; }
+    public List<User> getWorkers() { return workers; }
+    public List<WorkOrder> getWorkOrders() { return workOrders; }
+    public List<ChatConversation> getConversations() { return conversations; }
 
     public List<ChatMessage> getChatMessages(String conversationId) {
         if (!chatMessagesMap.containsKey(conversationId)) {
@@ -154,16 +304,38 @@ public class JobLinkRepository {
         List<ChatMessage> messages = getChatMessages(conversationId);
         String id = "m" + (messages.size() + 1);
         messages.add(new ChatMessage(id, currentUser.getId(), text, "Ahora", isMine));
-        
+
         for (ChatConversation conversation : conversations) {
             if (conversation.getId().equals(conversationId)) {
                 conversation.setLastMessage(text);
                 break;
             }
         }
+
+        addChatMessageToSupabase(conversationId, text);
     }
 
     public void addWorkOrder(WorkOrder order) {
         workOrders.add(order);
+
+        SolicitudTrabajoDto dto = new SolicitudTrabajoDto(
+                currentUser.getId() != null ? currentUser.getId() : "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                1,
+                order.getTitle(),
+                "Detalles de la solicitud desde el chat",
+                50.0
+        );
+
+        SupabaseClient.getApi().createSolicitudTrabajo(dto).enqueue(new Callback<List<SolicitudTrabajoDto>>() {
+            @Override
+            public void onResponse(Call<List<SolicitudTrabajoDto>> call, Response<List<SolicitudTrabajoDto>> response) {
+                Log.d(TAG, "Work order synced with Supabase!");
+            }
+
+            @Override
+            public void onFailure(Call<List<SolicitudTrabajoDto>> call, Throwable t) {
+                Log.e(TAG, "Work order sync error: " + t.getMessage());
+            }
+        });
     }
 }
