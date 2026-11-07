@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- JobLink Theme Colors -->
+    <color name="navy_primary">#0D253F</color>
+    <color name="navy_dark">#081726</color>
+    <color name="teal_primary">#006677</color>
+    <color name="teal_dark">#004D59</color>
+    <color name="teal_light">#E0F2F1</color>
+    <color name="orange_accent">#FF7A00</color>
+    <color name="orange_dark">#E06B00</color>
+    <color name="orange_light">#FFF3E0</color>
+
+    <color name="bg_light">#F4F6F8</color>
+    <color name="card_bg">#FFFFFF</color>
+    <color name="text_primary">#1A202C</color>
+    <color name="text_secondary">#718096</color>
+    <color name="text_muted">#A0AEC0</color>
+    <color name="divider_color">#E2E8F0</color>
+
+    <color name="status_online">#4CAF50</color>
+    <color name="status_offline">#9E9E9E</color>
+    <color name="rating_star">#FFB300</color>
+    <color name="progress_bar">#FF7A00</color>
+    <color name="chat_bubble_sent">#006677</color>
+    <color name="chat_bubble_received">#EDF2F7</color>
+</resources>

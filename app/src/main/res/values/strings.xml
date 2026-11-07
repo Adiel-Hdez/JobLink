@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">JobLink</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_search">Buscar</string>
+    <string name="nav_chat">Chat</string>
+    <string name="nav_settings">Ajustes</string>
+    <string name="role_worker">OFRECER SERVICIOS</string>
+    <string name="role_worker_desc">Soy un experto (Carpintero, Costurera...)</string>
+    <string name="role_client">CONTRATAR SERVICIOS</string>
+    <string name="role_client_desc">Busco a un experto...</string>
+</resources>

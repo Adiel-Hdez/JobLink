@@ -1,0 +1,48 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.JobLink" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/navy_primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/teal_primary</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="colorTertiary">@color/orange_accent</item>
+        <item name="android:windowBackground">@color/bg_light</item>
+        <item name="android:statusBarColor">@color/navy_primary</item>
+        <item name="android:navigationBarColor">@color/navy_primary</item>
+    </style>
+
+    <style name="Theme.JobLink" parent="Base.Theme.JobLink" />
+
+    <!-- Rounded Card Theme -->
+    <style name="JobLinkCard" parent="Widget.MaterialComponents.CardView">
+        <item name="cardBackgroundColor">@color/card_bg</item>
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">3dp</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
+
+    <!-- Rounded Button Themes -->
+    <style name="ButtonOrange" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/orange_accent</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="cornerRadius">24dp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="ButtonTeal" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/teal_primary</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="cornerRadius">24dp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="ButtonNavy" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/navy_primary</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="cornerRadius">24dp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+</resources>
