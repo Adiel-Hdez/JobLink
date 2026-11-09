@@ -11,6 +11,8 @@ import java.util.List;
 import sv.edu.itca.joblink.databinding.ItemChatBubbleReceivedBinding;
 import sv.edu.itca.joblink.databinding.ItemChatBubbleSentBinding;
 import sv.edu.itca.joblink.model.ChatMessage;
+import sv.edu.itca.joblink.model.User;
+import sv.edu.itca.joblink.repository.JobLinkRepository;
 
 public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -25,7 +27,11 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     @Override
     public int getItemViewType(int position) {
-        if (messageList.get(position).isMine()) {
+        ChatMessage msg = messageList.get(position);
+        User currentUser = JobLinkRepository.getInstance().getCurrentUser();
+        String currentUserId = currentUser != null && currentUser.getId() != null ? currentUser.getId() : "";
+
+        if (msg.isMine() || (msg.getSenderId() != null && msg.getSenderId().equalsIgnoreCase(currentUserId))) {
             return TYPE_SENT;
         } else {
             return TYPE_RECEIVED;

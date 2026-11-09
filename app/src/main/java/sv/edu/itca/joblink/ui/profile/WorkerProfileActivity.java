@@ -2,6 +2,7 @@ package sv.edu.itca.joblink.ui.profile;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,6 +14,7 @@ import sv.edu.itca.joblink.databinding.ActivityWorkerProfileBinding;
 import sv.edu.itca.joblink.model.User;
 import sv.edu.itca.joblink.repository.JobLinkRepository;
 import sv.edu.itca.joblink.ui.chat.ChatDetailActivity;
+import sv.edu.itca.joblink.util.ImageStorageManager;
 
 public class WorkerProfileActivity extends AppCompatActivity {
 
@@ -64,7 +66,7 @@ public class WorkerProfileActivity extends AppCompatActivity {
                     workerTrade != null ? workerTrade : "Albañilería y Enchapado",
                     "Construcción",
                     "Santa Ana, El Salvador",
-                    workerBio != null ? workerBio : "Experto en albañilería, muros, enchapado de cerámica y remodelaciones generales en Santa Ana.",
+                    workerBio != null ? workerBio : "Especialista profesional en construcción de muros, cerámica, enchapados y remodelaciones en Santa Ana.",
                     5.0, 10, true, "+503 7000-0000"
             );
         }
@@ -74,12 +76,27 @@ public class WorkerProfileActivity extends AppCompatActivity {
         binding.tvPublicProfileRating.setText(String.format(java.util.Locale.getDefault(), "%.1f ★", worker.getRating()));
         binding.tvPublicProfileBio.setText(worker.getBio());
 
+        if (worker.getProfilePhotoUrl() != null) {
+            ImageStorageManager.loadImageIntoView(binding.ivPublicProfileAvatar, worker.getProfilePhotoUrl());
+        }
+
+        // Hide contact bar if viewing own profile
+        User currentUser = JobLinkRepository.getInstance().getCurrentUser();
+        if (currentUser != null && currentUser.getId() != null && currentUser.getId().equalsIgnoreCase(worker.getId())) {
+            binding.btnContactarChat.setVisibility(View.GONE);
+            binding.bottomChatBar.setVisibility(View.GONE);
+        } else {
+            binding.btnContactarChat.setVisibility(View.VISIBLE);
+            binding.bottomChatBar.setVisibility(View.VISIBLE);
+        }
+
         binding.btnContactarChat.setOnClickListener(v -> openChat());
         binding.btnOpenFullChat.setOnClickListener(v -> openChat());
     }
 
     private void openChat() {
         Intent intent = new Intent(WorkerProfileActivity.this, ChatDetailActivity.class);
+        intent.putExtra("contact_id", worker.getId());
         intent.putExtra("contact_name", worker.getName());
         intent.putExtra("contact_profession", worker.getProfession());
         startActivity(intent);
