@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import sv.edu.itca.joblink.databinding.FragmentSearchBinding;
@@ -42,13 +43,15 @@ public class SearchFragment extends Fragment implements WorkerAdapter.OnWorkerCl
         super.onViewCreated(view, savedInstanceState);
 
         allWorkers = JobLinkRepository.getInstance().getWorkers();
-        adapter = new WorkerAdapter(new ArrayList<>(allWorkers), this);
+        adapter = new WorkerAdapter(new ArrayList<>(), this);
 
         binding.rvWorkersList.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.rvWorkersList.setAdapter(adapter);
 
         setupSearchFilter();
         setupCategoryChips();
+
+        filterWorkers("");
     }
 
     private void setupSearchFilter() {
@@ -103,6 +106,15 @@ public class SearchFragment extends Fragment implements WorkerAdapter.OnWorkerCl
                 filtered.add(worker);
             }
         }
+
+        // Sort: PREMIUM workers FIRST, then highest rating
+        Collections.sort(filtered, (w1, w2) -> {
+            if (w1.isPremium() != w2.isPremium()) {
+                return w1.isPremium() ? -1 : 1;
+            }
+            return Double.compare(w2.getRating(), w1.getRating());
+        });
+
         adapter.updateList(filtered);
     }
 

@@ -65,6 +65,12 @@ public class WorkerAdapter extends RecyclerView.Adapter<WorkerAdapter.WorkerView
             binding.tvWorkerCardBio.setText(worker.getBio());
             binding.tvWorkerCardRating.setText(String.format(java.util.Locale.getDefault(), "%.1f", worker.getRating()));
 
+            if (worker.isPremium()) {
+                binding.tvWorkerCardPremiumBadge.setVisibility(View.VISIBLE);
+            } else {
+                binding.tvWorkerCardPremiumBadge.setVisibility(View.GONE);
+            }
+
             binding.btnWorkerCardProfile.setOnClickListener(v -> {
                 if (listener != null) listener.onWorkerClick(worker);
             });

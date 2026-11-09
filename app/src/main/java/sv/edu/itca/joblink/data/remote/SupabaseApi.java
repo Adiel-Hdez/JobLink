@@ -6,6 +6,7 @@ import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.Headers;
+import retrofit2.http.PATCH;
 import retrofit2.http.POST;
 import retrofit2.http.Query;
 import sv.edu.itca.joblink.data.remote.dto.CategoriaOficioDto;
@@ -15,6 +16,7 @@ import sv.edu.itca.joblink.data.remote.dto.PerfilTrabajadorDto;
 import sv.edu.itca.joblink.data.remote.dto.PortafolioTrabajoDto;
 import sv.edu.itca.joblink.data.remote.dto.SolicitudTrabajoDto;
 import sv.edu.itca.joblink.data.remote.dto.UsuarioDto;
+import sv.edu.itca.joblink.data.remote.dto.ValoracionDto;
 
 public interface SupabaseApi {
 
@@ -34,6 +36,10 @@ public interface SupabaseApi {
     @POST("rest/v1/usuarios")
     Call<List<UsuarioDto>> createUsuario(@Body UsuarioDto dto);
 
+    @Headers({"Prefer: return=representation"})
+    @PATCH("rest/v1/usuarios")
+    Call<List<UsuarioDto>> updateUsuario(@Query("id") String idEq, @Body UsuarioDto dto);
+
     // 3. Perfiles de Trabajadores
     @GET("rest/v1/perfiles_trabajadores?select=*,usuarios(*),categorias_oficios(*)")
     Call<List<PerfilTrabajadorDto>> getPerfilesTrabajadores();
@@ -41,6 +47,10 @@ public interface SupabaseApi {
     @Headers({"Prefer: return=representation"})
     @POST("rest/v1/perfiles_trabajadores")
     Call<List<PerfilTrabajadorDto>> createPerfilTrabajador(@Body PerfilTrabajadorDto dto);
+
+    @Headers({"Prefer: return=representation"})
+    @PATCH("rest/v1/perfiles_trabajadores")
+    Call<List<PerfilTrabajadorDto>> updatePerfilTrabajador(@Query("id") String idEq, @Body PerfilTrabajadorDto dto);
 
     // 4. Portafolio de Trabajos
     @GET("rest/v1/portafolio_trabajos?select=*")
@@ -73,4 +83,12 @@ public interface SupabaseApi {
     @Headers({"Prefer: return=representation"})
     @POST("rest/v1/mensajes")
     Call<List<MensajeDto>> sendMensaje(@Body MensajeDto dto);
+
+    // 8. Valoraciones y Reseñas
+    @GET("rest/v1/valoraciones?select=*")
+    Call<List<ValoracionDto>> getValoraciones();
+
+    @Headers({"Prefer: return=representation"})
+    @POST("rest/v1/valoraciones")
+    Call<List<ValoracionDto>> createValoracion(@Body ValoracionDto dto);
 }

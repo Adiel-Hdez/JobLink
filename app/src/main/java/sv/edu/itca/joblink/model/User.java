@@ -10,17 +10,21 @@ public class User {
     }
 
     private String id;
+    private int workerProfileId; // Foreign key in perfiles_trabajadores table
     private String name;
     private String email;
     private Role role;
     private String profession;
     private String category;
+    private int categoryId;
     private String location;
     private String bio;
     private double rating;
     private int reviewsCount;
     private boolean isOnline;
+    private boolean isPremium; // $2.99 Premium plan flag
     private String phone;
+    private String profilePhotoUrl;
     private List<String> portfolioPhotos;
 
     public User() {
@@ -40,11 +44,15 @@ public class User {
         this.reviewsCount = reviewsCount;
         this.isOnline = isOnline;
         this.phone = phone;
+        this.isPremium = false;
         this.portfolioPhotos = new ArrayList<>();
     }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
+
+    public int getWorkerProfileId() { return workerProfileId; }
+    public void setWorkerProfileId(int workerProfileId) { this.workerProfileId = workerProfileId; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -61,6 +69,9 @@ public class User {
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
 
+    public int getCategoryId() { return categoryId; }
+    public void setCategoryId(int categoryId) { this.categoryId = categoryId; }
+
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
 
@@ -76,8 +87,14 @@ public class User {
     public boolean isOnline() { return isOnline; }
     public void setOnline(boolean online) { isOnline = online; }
 
+    public boolean isPremium() { return isPremium; }
+    public void setPremium(boolean premium) { isPremium = premium; }
+
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+
+    public String getProfilePhotoUrl() { return profilePhotoUrl; }
+    public void setProfilePhotoUrl(String profilePhotoUrl) { this.profilePhotoUrl = profilePhotoUrl; }
 
     public List<String> getPortfolioPhotos() { return portfolioPhotos; }
     public void setPortfolioPhotos(List<String> portfolioPhotos) { this.portfolioPhotos = portfolioPhotos; }

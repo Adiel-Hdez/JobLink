@@ -21,7 +21,10 @@ public class PerfilTrabajadorDto {
     @SerializedName("calificacion_promedio")
     public Double calificacionPromedio;
 
-    // Optional joined object when using select=*,usuarios(*),categorias_oficios(*)
+    @SerializedName("es_premium")
+    public Boolean esPremium;
+
+    // Joined objects
     @SerializedName("usuarios")
     public UsuarioDto usuario;
 
@@ -36,5 +39,6 @@ public class PerfilTrabajadorDto {
         this.descripcionProfesional = descripcionProfesional;
         this.disponible = true;
         this.calificacionPromedio = 5.0;
+        this.esPremium = false;
     }
 }

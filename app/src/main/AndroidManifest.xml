@@ -55,6 +55,18 @@
             android:name=".ui.profile.WorkerProfileActivity"
             android:exported="false" />
 
+        <!-- Premium Subscription Activity -->
+        <activity
+            android:name=".ui.profile.PremiumSubscriptionActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Rate Worker Activity -->
+        <activity
+            android:name=".ui.profile.RateWorkerActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- Chat Detail Activity -->
         <activity
             android:name=".ui.chat.ChatDetailActivity"

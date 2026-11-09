@@ -16,6 +16,8 @@ import sv.edu.itca.joblink.model.User;
 import sv.edu.itca.joblink.repository.JobLinkRepository;
 import sv.edu.itca.joblink.ui.auth.AuthActivity;
 import sv.edu.itca.joblink.ui.auth.RegisterWorkerActivity;
+import sv.edu.itca.joblink.ui.profile.PremiumSubscriptionActivity;
+import sv.edu.itca.joblink.ui.profile.RateWorkerActivity;
 
 public class SettingsFragment extends Fragment {
 
@@ -33,6 +35,16 @@ public class SettingsFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         updateUserUI();
+
+        binding.btnOpenPremium.setOnClickListener(v -> {
+            Intent intent = new Intent(getContext(), PremiumSubscriptionActivity.class);
+            startActivity(intent);
+        });
+
+        binding.btnRateWorker.setOnClickListener(v -> {
+            Intent intent = new Intent(getContext(), RateWorkerActivity.class);
+            startActivity(intent);
+        });
 
         binding.btnSwitchRole.setOnClickListener(v -> {
             User currentUser = JobLinkRepository.getInstance().getCurrentUser();
@@ -60,11 +72,21 @@ public class SettingsFragment extends Fragment {
         });
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateUserUI();
+    }
+
     private void updateUserUI() {
         User user = JobLinkRepository.getInstance().getCurrentUser();
-        if (user != null) {
+        if (user != null && binding != null) {
             binding.tvSettingsName.setText(user.getName());
             binding.tvSettingsEmail.setText(user.getEmail());
+
+            if (user.isPremium()) {
+                binding.tvSettingsName.setText(user.getName() + " ⭐ VIP");
+            }
 
             if (user.getRole() == User.Role.WORKER) {
                 binding.tvSettingsRole.setText("Rol Activo: TRABAJADOR (" + user.getProfession() + ")");

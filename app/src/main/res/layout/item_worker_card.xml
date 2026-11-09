@@ -14,6 +14,20 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Premium VIP Tag Banner (if worker is premium) -->
+        <TextView
+            android:id="@+id/tvWorkerCardPremiumBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/bg_badge_orange"
+            android:backgroundTint="@color/rating_star"
+            android:text="⭐ PROFESIONAL PREMIUM"
+            android:textColor="@color/navy_primary"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
