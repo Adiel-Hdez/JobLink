@@ -37,8 +37,8 @@
 
                 <ImageView
                     android:id="@+id/ivSettingsAvatar"
-                    android:layout_width="60dp"
-                    android:layout_height="60dp"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
                     android:src="@drawable/ic_person"
                     android:background="@drawable/bg_role_card_selected"
                     android:padding="10dp"
@@ -55,7 +55,7 @@
                         android:id="@+id/tvSettingsName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Carlos G."
+                        android:text="Nombre de Usuario"
                         android:textColor="@color/navy_primary"
                         android:textSize="18sp"
                         android:textStyle="bold" />
@@ -65,7 +65,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Rol Activo: TRABAJADOR (Carpintero)"
+                        android:text="Rol Activo"
                         android:textColor="@color/teal_primary"
                         android:textSize="13sp"
                         android:textStyle="bold" />
@@ -75,7 +75,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="carlos@joblink.sv"
+                        android:text="correo@joblink.sv"
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                 </LinearLayout>
@@ -118,8 +118,12 @@
                     android:id="@+id/btnOpenPremium"
                     style="@style/ButtonOrange"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
+                    android:layout_height="wrap_content"
+                    android:minHeight="52dp"
                     android:layout_marginTop="12dp"
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="12dp"
+                    android:textSize="13sp"
                     android:text="VER BENEFICIOS Y SUSCRIBIRME" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -157,8 +161,12 @@
                     android:id="@+id/btnSwitchRole"
                     style="@style/ButtonTeal"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
+                    android:layout_height="wrap_content"
+                    android:minHeight="52dp"
                     android:layout_marginTop="12dp"
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="12dp"
+                    android:textSize="13sp"
                     android:text="CAMBIAR A MODO CLIENTE" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -188,16 +196,24 @@
                     android:id="@+id/btnEditProfile"
                     style="@style/ButtonNavy"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
+                    android:layout_height="wrap_content"
+                    android:minHeight="52dp"
                     android:layout_marginTop="12dp"
-                    android:text="EDITAR PERFIL DE TRABAJADOR" />
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="12dp"
+                    android:textSize="13sp"
+                    android:text="EDITAR MI PERFIL" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRateWorker"
                     style="@style/ButtonTeal"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
+                    android:layout_height="wrap_content"
+                    android:minHeight="52dp"
                     android:layout_marginTop="8dp"
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="12dp"
+                    android:textSize="13sp"
                     android:text="CALIFICAR SERVICIO DE UN TRABAJADOR" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -207,8 +223,11 @@
             android:id="@+id/btnLogout"
             style="@style/ButtonOrange"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
+            android:layout_height="wrap_content"
+            android:minHeight="52dp"
             android:layout_marginTop="24dp"
+            android:paddingVertical="12dp"
+            android:textSize="15sp"
             android:text="CERRAR SESIÓN" />
 
     </LinearLayout>

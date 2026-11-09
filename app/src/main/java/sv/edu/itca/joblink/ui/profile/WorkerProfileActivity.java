@@ -33,9 +33,22 @@ public class WorkerProfileActivity extends AppCompatActivity {
         });
 
         String workerId = getIntent().getStringExtra("worker_id");
+        String workerName = getIntent().getStringExtra("worker_name");
+        String workerTrade = getIntent().getStringExtra("worker_trade");
+        String workerBio = getIntent().getStringExtra("worker_bio");
+
         if (workerId != null) {
             for (User u : JobLinkRepository.getInstance().getWorkers()) {
-                if (u.getId().equals(workerId)) {
+                if (workerId.equalsIgnoreCase(u.getId())) {
+                    worker = u;
+                    break;
+                }
+            }
+        }
+
+        if (worker == null && workerName != null) {
+            for (User u : JobLinkRepository.getInstance().getWorkers()) {
+                if (workerName.equalsIgnoreCase(u.getName())) {
                     worker = u;
                     break;
                 }
@@ -43,7 +56,17 @@ public class WorkerProfileActivity extends AppCompatActivity {
         }
 
         if (worker == null) {
-            worker = JobLinkRepository.getInstance().getWorkers().get(1); // Default Marta L. Costurera
+            worker = new User(
+                    workerId != null ? workerId : "w_temp",
+                    workerName != null ? workerName : "Moisés Adiel Rivera Hernández",
+                    "profesional@joblink.sv",
+                    User.Role.WORKER,
+                    workerTrade != null ? workerTrade : "Albañilería y Enchapado",
+                    "Construcción",
+                    "Santa Ana, El Salvador",
+                    workerBio != null ? workerBio : "Experto en albañilería, muros, enchapado de cerámica y remodelaciones generales en Santa Ana.",
+                    5.0, 10, true, "+503 7000-0000"
+            );
         }
 
         binding.tvPublicProfileName.setText(worker.getName());

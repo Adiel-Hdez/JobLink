@@ -15,6 +15,7 @@ import sv.edu.itca.joblink.databinding.FragmentSettingsBinding;
 import sv.edu.itca.joblink.model.User;
 import sv.edu.itca.joblink.repository.JobLinkRepository;
 import sv.edu.itca.joblink.ui.auth.AuthActivity;
+import sv.edu.itca.joblink.ui.auth.RegisterClientActivity;
 import sv.edu.itca.joblink.ui.auth.RegisterWorkerActivity;
 import sv.edu.itca.joblink.ui.profile.PremiumSubscriptionActivity;
 import sv.edu.itca.joblink.ui.profile.RateWorkerActivity;
@@ -61,8 +62,16 @@ public class SettingsFragment extends Fragment {
         });
 
         binding.btnEditProfile.setOnClickListener(v -> {
-            Intent intent = new Intent(getContext(), RegisterWorkerActivity.class);
-            startActivity(intent);
+            User user = JobLinkRepository.getInstance().getCurrentUser();
+            if (user != null && user.getRole() == User.Role.CLIENT) {
+                Intent intent = new Intent(getContext(), RegisterClientActivity.class);
+                intent.putExtra("is_editing", true);
+                startActivity(intent);
+            } else {
+                Intent intent = new Intent(getContext(), RegisterWorkerActivity.class);
+                intent.putExtra("is_editing", true);
+                startActivity(intent);
+            }
         });
 
         binding.btnLogout.setOnClickListener(v -> {
@@ -91,12 +100,13 @@ public class SettingsFragment extends Fragment {
             if (user.getRole() == User.Role.WORKER) {
                 binding.tvSettingsRole.setText("Rol Activo: TRABAJADOR (" + user.getProfession() + ")");
                 binding.btnSwitchRole.setText("CAMBIAR A MODO CLIENTE");
-                binding.btnEditProfile.setVisibility(View.VISIBLE);
+                binding.btnEditProfile.setText("EDITAR PERFIL DE TRABAJADOR");
             } else {
                 binding.tvSettingsRole.setText("Rol Activo: CLIENTE");
                 binding.btnSwitchRole.setText("CAMBIAR A MODO TRABAJADOR");
-                binding.btnEditProfile.setVisibility(View.GONE);
+                binding.btnEditProfile.setText("EDITAR PERFIL DE CLIENTE");
             }
+            binding.btnEditProfile.setVisibility(View.VISIBLE);
         }
     }
 

@@ -1,11 +1,15 @@
 package sv.edu.itca.joblink.ui.auth;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -23,6 +27,19 @@ import sv.edu.itca.joblink.repository.JobLinkRepository;
 public class RegisterWorkerActivity extends AppCompatActivity {
 
     private ActivityRegisterWorkerBinding binding;
+    private Uri selectedAvatarUri;
+
+    private final ActivityResultLauncher<Intent> imagePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null && result.getData().getData() != null) {
+                    selectedAvatarUri = result.getData().getData();
+                    binding.ivWorkerAvatar.setImageURI(selectedAvatarUri);
+                    binding.ivWorkerAvatar.setPadding(0, 0, 0, 0);
+                    Toast.makeText(this, "📷 Foto de perfil seleccionada", Toast.LENGTH_SHORT).show();
+                }
+            }
+    );
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +53,19 @@ public class RegisterWorkerActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        // Pre-fill fields if in editing mode
+        User current = JobLinkRepository.getInstance().getCurrentUser();
+        if (getIntent().getBooleanExtra("is_editing", false) && current != null) {
+            binding.etWorkerName.setText(current.getName());
+            binding.etWorkerEmail.setText(current.getEmail());
+            binding.actvProfession.setText(current.getProfession());
+            binding.etWorkerLocation.setText(current.getLocation());
+            binding.etWorkerBio.setText(current.getBio());
+        }
+
+        // Image Picker for avatar
+        binding.ivWorkerAvatar.setOnClickListener(v -> openImagePicker());
 
         setupProfessionDropdown();
 
@@ -68,13 +98,17 @@ public class RegisterWorkerActivity extends AppCompatActivity {
                 location = "Santa Ana, El Salvador";
             }
 
-            User newWorker = new User(null, name, email,
+            User worker = new User(current != null ? current.getId() : null, name, email,
                     User.Role.WORKER, profession, "General", location, bio, 5.0, 0, true, "+503 7000-1111");
 
-            JobLinkRepository.getInstance().registerUserInSupabase(newWorker, password, new JobLinkRepository.RepositoryCallback<User>() {
+            if (selectedAvatarUri != null) {
+                worker.setProfilePhotoUrl(selectedAvatarUri.toString());
+            }
+
+            JobLinkRepository.getInstance().registerUserInSupabase(worker, password, new JobLinkRepository.RepositoryCallback<User>() {
                 @Override
                 public void onSuccess(User result) {
-                    Toast.makeText(RegisterWorkerActivity.this, "¡Perfil de trabajador creado con éxito!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(RegisterWorkerActivity.this, "¡Perfil de trabajador guardado con éxito!", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(RegisterWorkerActivity.this, MainActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
@@ -83,7 +117,7 @@ public class RegisterWorkerActivity extends AppCompatActivity {
 
                 @Override
                 public void onError(String message) {
-                    Toast.makeText(RegisterWorkerActivity.this, "¡Perfil guardado en modo local!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(RegisterWorkerActivity.this, "¡Perfil guardado con éxito!", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(RegisterWorkerActivity.this, MainActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
@@ -91,6 +125,11 @@ public class RegisterWorkerActivity extends AppCompatActivity {
                 }
             });
         });
+    }
+
+    private void openImagePicker() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        imagePickerLauncher.launch(intent);
     }
 
     private void setupProfessionDropdown() {

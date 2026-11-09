@@ -122,6 +122,9 @@ public class SearchFragment extends Fragment implements WorkerAdapter.OnWorkerCl
     public void onWorkerClick(User worker) {
         Intent intent = new Intent(getContext(), WorkerProfileActivity.class);
         intent.putExtra("worker_id", worker.getId());
+        intent.putExtra("worker_name", worker.getName());
+        intent.putExtra("worker_trade", worker.getProfession());
+        intent.putExtra("worker_bio", worker.getBio());
         startActivity(intent);
     }
 
