@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rootChatDetail"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_light">
+    android:background="@color/bg_light"
+    android:fitsSystemWindows="true">
 
     <!-- Top Header Bar -->
     <LinearLayout
@@ -43,7 +45,7 @@
                 android:id="@+id/tvChatContactName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Carlos G. / Carpintería"
+                android:text="Nombre del Contacto"
                 android:textColor="@color/white"
                 android:textSize="17sp"
                 android:textStyle="bold" />
@@ -94,8 +96,9 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:background="@color/white"
+        android:elevation="8dp"
         android:orientation="horizontal"
-        android:padding="8dp"
+        android:padding="10dp"
         android:gravity="center_vertical">
 
         <ImageView
@@ -113,16 +116,20 @@
             android:layout_marginHorizontal="8dp"
             android:background="@drawable/bg_role_card_unselected"
             android:hint="Escribe un mensaje..."
+            android:textColor="@color/navy_primary"
+            android:textColorHint="@color/text_secondary"
             android:paddingHorizontal="12dp"
             android:paddingVertical="10dp"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:inputType="textCapSentences|textMultiLine"
+            android:maxLines="4" />
 
         <ImageView
             android:id="@+id/btnSendMessage"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="@drawable/bg_badge_orange"
-            android:padding="8dp"
+            android:padding="10dp"
             android:src="@drawable/ic_send"
             app:tint="@color/white" />
     </LinearLayout>

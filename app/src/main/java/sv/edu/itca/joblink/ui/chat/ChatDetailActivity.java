@@ -1,6 +1,8 @@
 package sv.edu.itca.joblink.ui.chat;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -12,6 +14,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import sv.edu.itca.joblink.databinding.ActivityChatDetailBinding;
@@ -24,10 +27,19 @@ public class ChatDetailActivity extends AppCompatActivity {
 
     private ActivityChatDetailBinding binding;
     private ChatMessageAdapter adapter;
-    private List<ChatMessage> messageList;
+    private final List<ChatMessage> messageList = new ArrayList<>();
     private String conversationId = "conv1";
-    private String contactName = "Carlos G.";
-    private String contactProfession = "Carpintería";
+    private String contactName = "Moisés Adiel Rivera Hernández";
+    private String contactProfession = "Albañilería y Enchapado";
+
+    private final Handler pollHandler = new Handler(Looper.getMainLooper());
+    private final Runnable pollRunnable = new Runnable() {
+        @Override
+        public void run() {
+            loadMessagesFromSupabase();
+            pollHandler.postDelayed(this, 3000); // Auto-refresh messages every 3 seconds
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,7 +48,7 @@ public class ChatDetailActivity extends AppCompatActivity {
         binding = ActivityChatDetailBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.rootChatDetail, (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
@@ -55,24 +67,51 @@ public class ChatDetailActivity extends AppCompatActivity {
         binding.tvChatContactName.setText(contactName + " / " + contactProfession);
         binding.btnChatBack.setOnClickListener(v -> finish());
 
-        messageList = JobLinkRepository.getInstance().getChatMessages(conversationId);
         adapter = new ChatMessageAdapter(messageList);
-
         binding.rvMessages.setLayoutManager(new LinearLayoutManager(this));
         binding.rvMessages.setAdapter(adapter);
 
         binding.btnSendMessage.setOnClickListener(v -> {
             String text = binding.etMessageInput.getText() != null ? binding.etMessageInput.getText().toString().trim() : "";
             if (!text.isEmpty()) {
-                JobLinkRepository.getInstance().addChatMessage(conversationId, text, true);
                 binding.etMessageInput.setText("");
-                adapter.notifyItemInserted(messageList.size() - 1);
-                binding.rvMessages.smoothScrollToPosition(messageList.size() - 1);
+                JobLinkRepository.getInstance().sendMensajeToSupabase(conversationId, text, null);
+                loadMessagesFromSupabase();
             }
         });
 
-        // "CREAR ORDEN DE TRABAJO / CITA" Dialog matching Figma design
         binding.btnCrearOrdenTrabajo.setOnClickListener(v -> showCreateWorkOrderDialog());
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        pollHandler.post(pollRunnable);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        pollHandler.removeCallbacks(pollRunnable);
+    }
+
+    private void loadMessagesFromSupabase() {
+        JobLinkRepository.getInstance().fetchMensajesFromSupabase(conversationId, new JobLinkRepository.RepositoryCallback<List<ChatMessage>>() {
+            @Override
+            public void onSuccess(List<ChatMessage> result) {
+                if (result != null) {
+                    messageList.clear();
+                    messageList.addAll(result);
+                    adapter.notifyDataSetChanged();
+                    if (!messageList.isEmpty()) {
+                        binding.rvMessages.scrollToPosition(messageList.size() - 1);
+                    }
+                }
+            }
+
+            @Override
+            public void onError(String message) {}
+        });
     }
 
     private void showCreateWorkOrderDialog() {
@@ -90,9 +129,7 @@ public class ChatDetailActivity extends AppCompatActivity {
 
             WorkOrder order = new WorkOrder("wo_" + System.currentTimeMillis(), title, "Cliente", contactName, 10, "En Curso");
             JobLinkRepository.getInstance().addWorkOrder(order);
-
-            JobLinkRepository.getInstance().addChatMessage(conversationId, "📋 Orden de trabajo creada: " + title, true);
-            adapter.notifyItemInserted(messageList.size() - 1);
+            loadMessagesFromSupabase();
 
             Toast.makeText(this, "¡Orden de trabajo creada con éxito!", Toast.LENGTH_SHORT).show();
         });

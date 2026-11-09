@@ -38,8 +38,17 @@ public class SettingsFragment extends Fragment {
         updateUserUI();
 
         binding.btnOpenPremium.setOnClickListener(v -> {
-            Intent intent = new Intent(getContext(), PremiumSubscriptionActivity.class);
-            startActivity(intent);
+            User user = JobLinkRepository.getInstance().getCurrentUser();
+            if (user != null) {
+                if (user.isPremium()) {
+                    user.setPremium(false);
+                    Toast.makeText(getContext(), "Suscripción Premium cancelada", Toast.LENGTH_SHORT).show();
+                    updateUserUI();
+                } else {
+                    Intent intent = new Intent(getContext(), PremiumSubscriptionActivity.class);
+                    startActivity(intent);
+                }
+            }
         });
 
         binding.btnRateWorker.setOnClickListener(v -> {
@@ -101,10 +110,21 @@ public class SettingsFragment extends Fragment {
                 binding.tvSettingsRole.setText("Rol Activo: TRABAJADOR (" + user.getProfession() + ")");
                 binding.btnSwitchRole.setText("CAMBIAR A MODO CLIENTE");
                 binding.btnEditProfile.setText("EDITAR PERFIL DE TRABAJADOR");
+
+                // Show Premium card only for workers
+                binding.cardPremium.setVisibility(View.VISIBLE);
+                if (user.isPremium()) {
+                    binding.btnOpenPremium.setText("CANCELAR SUSCRIPCIÓN PREMIUM");
+                } else {
+                    binding.btnOpenPremium.setText("VER BENEFICIOS Y SUSCRIBIRME");
+                }
             } else {
                 binding.tvSettingsRole.setText("Rol Activo: CLIENTE");
                 binding.btnSwitchRole.setText("CAMBIAR A MODO TRABAJADOR");
                 binding.btnEditProfile.setText("EDITAR PERFIL DE CLIENTE");
+
+                // Hide Premium card for clients
+                binding.cardPremium.setVisibility(View.GONE);
             }
             binding.btnEditProfile.setVisibility(View.VISIBLE);
         }

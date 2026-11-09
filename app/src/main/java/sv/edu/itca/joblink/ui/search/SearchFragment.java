@@ -30,6 +30,7 @@ public class SearchFragment extends Fragment implements WorkerAdapter.OnWorkerCl
     private WorkerAdapter adapter;
     private List<User> allWorkers;
     private String selectedCategoryGroup = "Todos";
+    private boolean isPremiumOnlyFilter = false;
 
     @Nullable
     @Override
@@ -71,7 +72,12 @@ public class SearchFragment extends Fragment implements WorkerAdapter.OnWorkerCl
 
     private void setupCategoryChips() {
         binding.chipGroupCategories.setOnCheckedStateChangeListener((group, checkedIds) -> {
-            if (checkedIds.contains(binding.chipConstruccion.getId())) {
+            isPremiumOnlyFilter = false;
+
+            if (checkedIds.contains(binding.chipPremium.getId())) {
+                isPremiumOnlyFilter = true;
+                selectedCategoryGroup = "Todos";
+            } else if (checkedIds.contains(binding.chipConstruccion.getId())) {
                 selectedCategoryGroup = "Construcción";
             } else if (checkedIds.contains(binding.chipMantenimiento.getId())) {
                 selectedCategoryGroup = "Mantenimiento";
@@ -102,7 +108,9 @@ public class SearchFragment extends Fragment implements WorkerAdapter.OnWorkerCl
                     worker.getCategory().toLowerCase().contains(selectedCategoryGroup.toLowerCase()) ||
                     worker.getProfession().toLowerCase().contains(selectedCategoryGroup.toLowerCase());
 
-            if (matchesQuery && matchesCategory) {
+            boolean matchesPremiumFilter = !isPremiumOnlyFilter || worker.isPremium();
+
+            if (matchesQuery && matchesCategory && matchesPremiumFilter) {
                 filtered.add(worker);
             }
         }

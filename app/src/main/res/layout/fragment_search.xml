@@ -42,6 +42,8 @@
             android:id="@+id/etSearchQuery"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:textColor="@color/navy_primary"
+            android:textColorHint="@color/text_secondary"
             android:inputType="text" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -66,6 +68,14 @@
                 android:checked="true"
                 android:text="Todos"
                 app:chipBackgroundColor="@color/teal_light" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipPremium"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⭐ Premium"
+                app:chipBackgroundColor="@color/orange_light" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipConstruccion"
