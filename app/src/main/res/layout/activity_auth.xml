@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rootAuthScroll"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_light"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:fitsSystemWindows="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -20,7 +22,7 @@
             android:layout_marginTop="16dp"
             android:text="JobLink"
             android:textColor="@color/navy_primary"
-            android:textSize="32sp"
+            android:textSize="36sp"
             android:textStyle="bold|italic" />
 
         <TextView
@@ -36,7 +38,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Inicia Sesión con tu cuenta"
+            android:text="Inicia Sesión con tu cuenta de JobLink"
             android:textColor="@color/text_secondary"
             android:textSize="14sp" />
 
@@ -59,7 +61,7 @@
                     android:layout_height="wrap_content"
                     android:hint="Email"
                     app:startIconDrawable="@drawable/ic_email"
-                    app:startIconTint="@color/text_secondary"
+                    app:startIconTint="@color/teal_primary"
                     app:boxCornerRadiusTopStart="12dp"
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
@@ -69,6 +71,8 @@
                         android:id="@+id/etEmail"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:textColor="@color/navy_primary"
+                        android:textColorHint="@color/text_secondary"
                         android:inputType="textEmailAddress" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -79,7 +83,7 @@
                     android:layout_marginTop="12dp"
                     android:hint="Contraseña"
                     app:startIconDrawable="@drawable/ic_lock"
-                    app:startIconTint="@color/text_secondary"
+                    app:startIconTint="@color/teal_primary"
                     app:endIconMode="password_toggle"
                     app:boxCornerRadiusTopStart="12dp"
                     app:boxCornerRadiusTopEnd="12dp"
@@ -90,6 +94,8 @@
                         android:id="@+id/etPassword"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:textColor="@color/navy_primary"
+                        android:textColorHint="@color/text_secondary"
                         android:inputType="textPassword" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -117,7 +123,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="16dp">
+            android:layout_marginTop="16dp"
+            android:baselineAligned="false">
 
             <!-- Card OFRECER SERVICIOS (Worker) -->
             <LinearLayout

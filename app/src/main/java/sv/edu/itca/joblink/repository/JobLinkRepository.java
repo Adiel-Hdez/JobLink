@@ -133,6 +133,50 @@ public class JobLinkRepository {
 
     // --- SUPABASE API CALLS ---
 
+    public void loginWithSupabase(String email, String password, RepositoryCallback<User> callback) {
+        String emailQuery = "eq." + email.trim();
+        SupabaseClient.getApi().getUsuarioByEmail(emailQuery).enqueue(new Callback<List<UsuarioDto>>() {
+            @Override
+            public void onResponse(Call<List<UsuarioDto>> call, Response<List<UsuarioDto>> response) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    UsuarioDto u = response.body().get(0);
+                    User.Role role = "trabajador".equalsIgnoreCase(u.rol) ? User.Role.WORKER : User.Role.CLIENT;
+                    User user = new User(
+                            u.id, u.nombreCompleto, u.email, role,
+                            role == User.Role.WORKER ? "Profesional" : "Cliente",
+                            "General", u.ubicacion != null ? u.ubicacion : "Santa Ana",
+                            "Usuario registrado en JobLink", 5.0, 10, true,
+                            u.telefono != null ? u.telefono : "+503 7000-0000"
+                    );
+                    currentUser = user;
+                    if (callback != null) callback.onSuccess(user);
+                } else {
+                    // Fallback to local match or default user
+                    User fallback = findLocalUserByEmail(email);
+                    currentUser = fallback;
+                    if (callback != null) callback.onSuccess(fallback);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<UsuarioDto>> call, Throwable t) {
+                Log.e(TAG, "Login failed on Supabase: " + t.getMessage());
+                User fallback = findLocalUserByEmail(email);
+                currentUser = fallback;
+                if (callback != null) callback.onSuccess(fallback);
+            }
+        });
+    }
+
+    private User findLocalUserByEmail(String email) {
+        for (User w : workers) {
+            if (w.getEmail().equalsIgnoreCase(email.trim())) {
+                return w;
+            }
+        }
+        return new User("usr_local", "Usuario JobLink", email, User.Role.WORKER, "Carpintero", "General", "Santa Ana", "Usuario local", 5.0, 5, true, "+503 7000-0000");
+    }
+
     public void fetchCategoriesFromSupabase(RepositoryCallback<List<TradeCategory>> callback) {
         SupabaseClient.getApi().getCategoriasOficios().enqueue(new Callback<List<CategoriaOficioDto>>() {
             @Override

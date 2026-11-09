@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rootWorkerScroll"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_light"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:fitsSystemWindows="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -26,9 +28,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="PERFIL DE TRABAJADOR"
+            android:text="PERFIL DE TRABAJADOR / PROFESIONAL"
             android:textColor="@color/navy_primary"
-            android:textSize="22sp"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
         <!-- Avatar Selection -->
@@ -76,6 +78,7 @@
                     android:layout_height="wrap_content"
                     android:hint="Nombre Completo"
                     app:startIconDrawable="@drawable/ic_person"
+                    app:startIconTint="@color/teal_primary"
                     app:boxCornerRadiusTopStart="12dp"
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
@@ -85,7 +88,56 @@
                         android:id="@+id/etWorkerName"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:textColor="@color/navy_primary"
+                        android:textColorHint="@color/text_secondary"
                         android:inputType="textPersonName" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Email -->
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="Correo Electrónico"
+                    app:startIconDrawable="@drawable/ic_email"
+                    app:startIconTint="@color/teal_primary"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusBottomEnd="12dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etWorkerEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/navy_primary"
+                        android:textColorHint="@color/text_secondary"
+                        android:inputType="textEmailAddress" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Contraseña -->
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="Contraseña"
+                    app:startIconDrawable="@drawable/ic_lock"
+                    app:startIconTint="@color/teal_primary"
+                    app:endIconMode="password_toggle"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusBottomEnd="12dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etWorkerPassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/navy_primary"
+                        android:textColorHint="@color/text_secondary"
+                        android:inputType="textPassword" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- Profesión Spinner / AutoComplete -->
@@ -96,6 +148,7 @@
                     android:layout_marginTop="12dp"
                     android:hint="Profesión (ej. Carpintero, Fontanero)"
                     app:startIconDrawable="@drawable/ic_briefcase"
+                    app:startIconTint="@color/teal_primary"
                     app:boxCornerRadiusTopStart="12dp"
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
@@ -105,6 +158,8 @@
                         android:id="@+id/actvProfession"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:textColor="@color/navy_primary"
+                        android:textColorHint="@color/text_secondary"
                         android:inputType="none" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -116,6 +171,7 @@
                     android:layout_marginTop="12dp"
                     android:hint="Ubicación (ej. Santa Ana Centro)"
                     app:startIconDrawable="@drawable/ic_location"
+                    app:startIconTint="@color/teal_primary"
                     app:boxCornerRadiusTopStart="12dp"
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
@@ -125,6 +181,8 @@
                         android:id="@+id/etWorkerLocation"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:textColor="@color/navy_primary"
+                        android:textColorHint="@color/text_secondary"
                         android:inputType="text" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -144,6 +202,8 @@
                         android:id="@+id/etWorkerBio"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:textColor="@color/navy_primary"
+                        android:textColorHint="@color/text_secondary"
                         android:inputType="textMultiLine"
                         android:minLines="3"
                         android:gravity="top" />
@@ -289,9 +349,9 @@
             android:id="@+id/btnGuardarPerfil"
             style="@style/ButtonNavy"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="20dp"
-            android:text="GUARDAR CAMBIOS" />
+            android:layout_height="56dp"
+            android:layout_marginTop="24dp"
+            android:text="GUARDAR Y CREAR PERFIL" />
 
     </LinearLayout>
 </ScrollView>

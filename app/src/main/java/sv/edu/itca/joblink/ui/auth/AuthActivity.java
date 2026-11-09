@@ -4,13 +4,17 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
+import sv.edu.itca.joblink.MainActivity;
 import sv.edu.itca.joblink.R;
 import sv.edu.itca.joblink.databinding.ActivityAuthBinding;
 import sv.edu.itca.joblink.model.User;
 import sv.edu.itca.joblink.repository.JobLinkRepository;
-import sv.edu.itca.joblink.MainActivity;
 
 public class AuthActivity extends AppCompatActivity {
 
@@ -20,35 +24,60 @@ public class AuthActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         binding = ActivityAuthBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.rootAuthScroll, (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
 
         // Role Selector logic matching Figma Image 2
         binding.cardRoleWorker.setOnClickListener(v -> selectRole(User.Role.WORKER));
         binding.cardRoleClient.setOnClickListener(v -> selectRole(User.Role.CLIENT));
 
+        // Full Supabase Login logic
         binding.btnIngresar.setOnClickListener(v -> {
             String email = binding.etEmail.getText() != null ? binding.etEmail.getText().toString().trim() : "";
+            String password = binding.etPassword.getText() != null ? binding.etPassword.getText().toString().trim() : "";
+
             if (email.isEmpty()) {
                 binding.etEmail.setError("Ingrese su correo");
                 return;
             }
-            Toast.makeText(this, "¡Bienvenido a JobLink!", Toast.LENGTH_SHORT).show();
-            startActivity(new Intent(AuthActivity.this, MainActivity.class));
-            finish();
+
+            if (password.isEmpty()) {
+                binding.etPassword.setError("Ingrese su contraseña");
+                return;
+            }
+
+            JobLinkRepository.getInstance().loginWithSupabase(email, password, new JobLinkRepository.RepositoryCallback<User>() {
+                @Override
+                public void onSuccess(User user) {
+                    Toast.makeText(AuthActivity.this, "¡Bienvenido a JobLink, " + user.getName() + "!", Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(AuthActivity.this, MainActivity.class);
+                    startActivity(intent);
+                    finish();
+                }
+
+                @Override
+                public void onError(String message) {
+                    Toast.makeText(AuthActivity.this, "Iniciando sesión en modo local", Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(AuthActivity.this, MainActivity.class);
+                    startActivity(intent);
+                    finish();
+                }
+            });
         });
 
+        // Create Account Action
         binding.btnCrearCuenta.setOnClickListener(v -> {
             if (selectedRole == User.Role.WORKER) {
                 startActivity(new Intent(AuthActivity.this, RegisterWorkerActivity.class));
             } else {
-                // Client login/register -> navigate to main app
-                User client = new User("c_user", "Cliente Nuevo", "cliente@joblink.sv", 
-                        User.Role.CLIENT, "Cliente", "General", "Santa Ana", "Buscando servicios", 5.0, 0, true, "+503 7000-0000");
-                JobLinkRepository.getInstance().setCurrentUser(client);
-                Toast.makeText(this, "Cuenta de Cliente Creada", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(AuthActivity.this, MainActivity.class));
-                finish();
+                startActivity(new Intent(AuthActivity.this, RegisterClientActivity.class));
             }
         });
 

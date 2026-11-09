@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
+        android:name=".JobLinkApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -34,6 +35,12 @@
         <!-- Register Worker Profile Activity -->
         <activity
             android:name=".ui.auth.RegisterWorkerActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Register Client Profile Activity -->
+        <activity
+            android:name=".ui.auth.RegisterClientActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
