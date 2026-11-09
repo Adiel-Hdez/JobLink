@@ -5,6 +5,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -18,25 +19,51 @@ import androidx.core.view.WindowInsetsCompat;
 import java.util.ArrayList;
 import java.util.List;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 import sv.edu.itca.joblink.MainActivity;
+import sv.edu.itca.joblink.data.remote.SupabaseClient;
+import sv.edu.itca.joblink.data.remote.dto.PortafolioTrabajoDto;
 import sv.edu.itca.joblink.databinding.ActivityRegisterWorkerBinding;
 import sv.edu.itca.joblink.model.TradeCategory;
 import sv.edu.itca.joblink.model.User;
 import sv.edu.itca.joblink.repository.JobLinkRepository;
+import sv.edu.itca.joblink.util.ImageStorageManager;
 
 public class RegisterWorkerActivity extends AppCompatActivity {
 
     private ActivityRegisterWorkerBinding binding;
-    private Uri selectedAvatarUri;
+    private String savedAvatarPath;
+    private int activePortfolioSlot = 0;
+    private final List<String> portfolioPaths = new ArrayList<>();
 
-    private final ActivityResultLauncher<Intent> imagePickerLauncher = registerForActivityResult(
+    private final ActivityResultLauncher<Intent> avatarPickerLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null && result.getData().getData() != null) {
-                    selectedAvatarUri = result.getData().getData();
-                    binding.ivWorkerAvatar.setImageURI(selectedAvatarUri);
-                    binding.ivWorkerAvatar.setPadding(0, 0, 0, 0);
+                    Uri uri = result.getData().getData();
+                    savedAvatarPath = ImageStorageManager.saveImageToInternalStorage(this, uri, "avatar");
+                    ImageStorageManager.loadImageIntoView(binding.ivWorkerAvatar, savedAvatarPath);
                     Toast.makeText(this, "📷 Foto de perfil seleccionada", Toast.LENGTH_SHORT).show();
+                }
+            }
+    );
+
+    private final ActivityResultLauncher<Intent> portfolioPickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null && result.getData().getData() != null) {
+                    Uri uri = result.getData().getData();
+                    String path = ImageStorageManager.saveImageToInternalStorage(this, uri, "portfolio");
+                    if (path != null) {
+                        portfolioPaths.add(path);
+                        ImageView slotView = getSlotImageView(activePortfolioSlot);
+                        if (slotView != null) {
+                            ImageStorageManager.loadImageIntoView(slotView, path);
+                        }
+                        Toast.makeText(this, "🖼️ Foto agregada al portafolio", Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
     );
@@ -62,11 +89,19 @@ public class RegisterWorkerActivity extends AppCompatActivity {
             binding.actvProfession.setText(current.getProfession());
             binding.etWorkerLocation.setText(current.getLocation());
             binding.etWorkerBio.setText(current.getBio());
+            if (current.getProfilePhotoUrl() != null) {
+                savedAvatarPath = current.getProfilePhotoUrl();
+                ImageStorageManager.loadImageIntoView(binding.ivWorkerAvatar, savedAvatarPath);
+            }
         }
 
-        // Image Picker for avatar
-        binding.ivWorkerAvatar.setOnClickListener(v -> openImagePicker());
+        // Image Pickers
+        binding.ivWorkerAvatar.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            avatarPickerLauncher.launch(intent);
+        });
 
+        setupPortfolioClickListeners();
         setupProfessionDropdown();
 
         binding.btnGuardarPerfil.setOnClickListener(v -> {
@@ -91,7 +126,7 @@ public class RegisterWorkerActivity extends AppCompatActivity {
             }
 
             if (profession.isEmpty()) {
-                profession = "Carpintero";
+                profession = "Albañilería y Enchapado";
             }
 
             if (location.isEmpty()) {
@@ -101,13 +136,16 @@ public class RegisterWorkerActivity extends AppCompatActivity {
             User worker = new User(current != null ? current.getId() : null, name, email,
                     User.Role.WORKER, profession, "General", location, bio, 5.0, 0, true, "+503 7000-1111");
 
-            if (selectedAvatarUri != null) {
-                worker.setProfilePhotoUrl(selectedAvatarUri.toString());
+            if (savedAvatarPath != null) {
+                worker.setProfilePhotoUrl(savedAvatarPath);
             }
+
+            worker.setPortfolioPhotos(portfolioPaths);
 
             JobLinkRepository.getInstance().registerUserInSupabase(worker, password, new JobLinkRepository.RepositoryCallback<User>() {
                 @Override
                 public void onSuccess(User result) {
+                    uploadPortfolioToSupabase(1);
                     Toast.makeText(RegisterWorkerActivity.this, "¡Perfil de trabajador guardado con éxito!", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(RegisterWorkerActivity.this, MainActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -127,9 +165,43 @@ public class RegisterWorkerActivity extends AppCompatActivity {
         });
     }
 
-    private void openImagePicker() {
+    private void setupPortfolioClickListeners() {
+        binding.cardSlot1.setOnClickListener(v -> openPortfolioPicker(1));
+        binding.cardSlot2.setOnClickListener(v -> openPortfolioPicker(2));
+        binding.cardSlot3.setOnClickListener(v -> openPortfolioPicker(3));
+        binding.cardSlot4.setOnClickListener(v -> openPortfolioPicker(4));
+        binding.cardSlot5.setOnClickListener(v -> openPortfolioPicker(5));
+        binding.cardSlot6.setOnClickListener(v -> openPortfolioPicker(6));
+    }
+
+    private void openPortfolioPicker(int slot) {
+        activePortfolioSlot = slot;
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        imagePickerLauncher.launch(intent);
+        portfolioPickerLauncher.launch(intent);
+    }
+
+    private ImageView getSlotImageView(int slot) {
+        switch (slot) {
+            case 1: return binding.ivPortfolioSlot1;
+            case 2: return binding.ivPortfolioSlot2;
+            case 3: return binding.ivPortfolioSlot3;
+            case 4: return binding.ivPortfolioSlot4;
+            case 5: return binding.ivPortfolioSlot5;
+            case 6: return binding.ivPortfolioSlot6;
+            default: return null;
+        }
+    }
+
+    private void uploadPortfolioToSupabase(int workerProfileId) {
+        for (String photoPath : portfolioPaths) {
+            PortafolioTrabajoDto dto = new PortafolioTrabajoDto(workerProfileId, "Trabajo Realizado", "Foto de portafolio", photoPath);
+            SupabaseClient.getApi().addPortafolioItem(dto).enqueue(new Callback<List<PortafolioTrabajoDto>>() {
+                @Override
+                public void onResponse(Call<List<PortafolioTrabajoDto>> call, Response<List<PortafolioTrabajoDto>> response) {}
+                @Override
+                public void onFailure(Call<List<PortafolioTrabajoDto>> call, Throwable t) {}
+            });
+        }
     }
 
     private void setupProfessionDropdown() {
