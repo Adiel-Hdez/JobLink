@@ -15,6 +15,7 @@ import sv.edu.itca.joblink.R;
 import sv.edu.itca.joblink.databinding.ActivityAuthBinding;
 import sv.edu.itca.joblink.model.User;
 import sv.edu.itca.joblink.repository.JobLinkRepository;
+import sv.edu.itca.joblink.util.SessionManager;
 
 public class AuthActivity extends AppCompatActivity {
 
@@ -56,6 +57,7 @@ public class AuthActivity extends AppCompatActivity {
             JobLinkRepository.getInstance().loginWithSupabase(email, password, new JobLinkRepository.RepositoryCallback<User>() {
                 @Override
                 public void onSuccess(User user) {
+                    new SessionManager(AuthActivity.this).saveUserSession(user);
                     Toast.makeText(AuthActivity.this, "¡Bienvenido a JobLink, " + user.getName() + "!", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(AuthActivity.this, MainActivity.class);
                     startActivity(intent);

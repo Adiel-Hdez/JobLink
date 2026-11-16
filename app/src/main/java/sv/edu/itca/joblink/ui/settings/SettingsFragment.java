@@ -19,6 +19,8 @@ import sv.edu.itca.joblink.ui.auth.RegisterClientActivity;
 import sv.edu.itca.joblink.ui.auth.RegisterWorkerActivity;
 import sv.edu.itca.joblink.ui.profile.PremiumSubscriptionActivity;
 import sv.edu.itca.joblink.ui.profile.RateWorkerActivity;
+import sv.edu.itca.joblink.util.ImageStorageManager;
+import sv.edu.itca.joblink.util.SessionManager;
 
 public class SettingsFragment extends Fragment {
 
@@ -42,6 +44,7 @@ public class SettingsFragment extends Fragment {
             if (user != null) {
                 if (user.isPremium()) {
                     user.setPremium(false);
+                    new SessionManager(getContext()).saveUserSession(user);
                     Toast.makeText(getContext(), "Suscripción Premium cancelada", Toast.LENGTH_SHORT).show();
                     updateUserUI();
                 } else {
@@ -66,6 +69,7 @@ public class SettingsFragment extends Fragment {
                     currentUser.setRole(User.Role.WORKER);
                     Toast.makeText(getContext(), "Cambiado a Modo Trabajador", Toast.LENGTH_SHORT).show();
                 }
+                new SessionManager(getContext()).saveUserSession(currentUser);
                 updateUserUI();
             }
         });
@@ -84,6 +88,7 @@ public class SettingsFragment extends Fragment {
         });
 
         binding.btnLogout.setOnClickListener(v -> {
+            new SessionManager(getContext()).clearSession();
             Intent intent = new Intent(getContext(), AuthActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
@@ -101,6 +106,10 @@ public class SettingsFragment extends Fragment {
         if (user != null && binding != null) {
             binding.tvSettingsName.setText(user.getName());
             binding.tvSettingsEmail.setText(user.getEmail());
+
+            if (user.getProfilePhotoUrl() != null) {
+                ImageStorageManager.loadImageIntoView(binding.ivSettingsAvatar, user.getProfilePhotoUrl());
+            }
 
             if (user.isPremium()) {
                 binding.tvSettingsName.setText(user.getName() + " ⭐ VIP");

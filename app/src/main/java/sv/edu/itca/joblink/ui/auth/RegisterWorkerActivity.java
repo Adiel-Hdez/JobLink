@@ -30,11 +30,12 @@ import sv.edu.itca.joblink.model.TradeCategory;
 import sv.edu.itca.joblink.model.User;
 import sv.edu.itca.joblink.repository.JobLinkRepository;
 import sv.edu.itca.joblink.util.ImageStorageManager;
+import sv.edu.itca.joblink.util.SessionManager;
 
 public class RegisterWorkerActivity extends AppCompatActivity {
 
     private ActivityRegisterWorkerBinding binding;
-    private String savedAvatarPath;
+    private String savedAvatarBase64OrPath;
     private int activePortfolioSlot = 0;
     private final List<String> portfolioPaths = new ArrayList<>();
 
@@ -43,8 +44,12 @@ public class RegisterWorkerActivity extends AppCompatActivity {
             result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null && result.getData().getData() != null) {
                     Uri uri = result.getData().getData();
-                    savedAvatarPath = ImageStorageManager.saveImageToInternalStorage(this, uri, "avatar");
-                    ImageStorageManager.loadImageIntoView(binding.ivWorkerAvatar, savedAvatarPath);
+                    // Convert to Base64 so it can be saved in Supabase text column AND loaded across devices!
+                    savedAvatarBase64OrPath = ImageStorageManager.convertUriToBase64(this, uri);
+                    if (savedAvatarBase64OrPath == null) {
+                        savedAvatarBase64OrPath = ImageStorageManager.saveImageToInternalStorage(this, uri, "avatar");
+                    }
+                    ImageStorageManager.loadImageIntoView(binding.ivWorkerAvatar, savedAvatarBase64OrPath);
                     Toast.makeText(this, "📷 Foto de perfil seleccionada", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -55,12 +60,15 @@ public class RegisterWorkerActivity extends AppCompatActivity {
             result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null && result.getData().getData() != null) {
                     Uri uri = result.getData().getData();
-                    String path = ImageStorageManager.saveImageToInternalStorage(this, uri, "portfolio");
-                    if (path != null) {
-                        portfolioPaths.add(path);
+                    String photoData = ImageStorageManager.convertUriToBase64(this, uri);
+                    if (photoData == null) {
+                        photoData = ImageStorageManager.saveImageToInternalStorage(this, uri, "portfolio");
+                    }
+                    if (photoData != null) {
+                        portfolioPaths.add(photoData);
                         ImageView slotView = getSlotImageView(activePortfolioSlot);
                         if (slotView != null) {
-                            ImageStorageManager.loadImageIntoView(slotView, path);
+                            ImageStorageManager.loadImageIntoView(slotView, photoData);
                         }
                         Toast.makeText(this, "🖼️ Foto agregada al portafolio", Toast.LENGTH_SHORT).show();
                     }
@@ -90,8 +98,8 @@ public class RegisterWorkerActivity extends AppCompatActivity {
             binding.etWorkerLocation.setText(current.getLocation());
             binding.etWorkerBio.setText(current.getBio());
             if (current.getProfilePhotoUrl() != null) {
-                savedAvatarPath = current.getProfilePhotoUrl();
-                ImageStorageManager.loadImageIntoView(binding.ivWorkerAvatar, savedAvatarPath);
+                savedAvatarBase64OrPath = current.getProfilePhotoUrl();
+                ImageStorageManager.loadImageIntoView(binding.ivWorkerAvatar, savedAvatarBase64OrPath);
             }
         }
 
@@ -136,8 +144,8 @@ public class RegisterWorkerActivity extends AppCompatActivity {
             User worker = new User(current != null ? current.getId() : null, name, email,
                     User.Role.WORKER, profession, "General", location, bio, 5.0, 0, true, "+503 7000-1111");
 
-            if (savedAvatarPath != null) {
-                worker.setProfilePhotoUrl(savedAvatarPath);
+            if (savedAvatarBase64OrPath != null) {
+                worker.setProfilePhotoUrl(savedAvatarBase64OrPath);
             }
 
             worker.setPortfolioPhotos(portfolioPaths);
@@ -145,6 +153,7 @@ public class RegisterWorkerActivity extends AppCompatActivity {
             JobLinkRepository.getInstance().registerUserInSupabase(worker, password, new JobLinkRepository.RepositoryCallback<User>() {
                 @Override
                 public void onSuccess(User result) {
+                    new SessionManager(RegisterWorkerActivity.this).saveUserSession(result);
                     uploadPortfolioToSupabase(1);
                     Toast.makeText(RegisterWorkerActivity.this, "¡Perfil de trabajador guardado con éxito!", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(RegisterWorkerActivity.this, MainActivity.class);
@@ -155,6 +164,7 @@ public class RegisterWorkerActivity extends AppCompatActivity {
 
                 @Override
                 public void onError(String message) {
+                    new SessionManager(RegisterWorkerActivity.this).saveUserSession(worker);
                     Toast.makeText(RegisterWorkerActivity.this, "¡Perfil guardado con éxito!", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(RegisterWorkerActivity.this, MainActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

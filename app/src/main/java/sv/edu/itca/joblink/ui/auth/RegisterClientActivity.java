@@ -18,17 +18,23 @@ import sv.edu.itca.joblink.MainActivity;
 import sv.edu.itca.joblink.databinding.ActivityRegisterClientBinding;
 import sv.edu.itca.joblink.model.User;
 import sv.edu.itca.joblink.repository.JobLinkRepository;
+import sv.edu.itca.joblink.util.ImageStorageManager;
+import sv.edu.itca.joblink.util.SessionManager;
 
 public class RegisterClientActivity extends AppCompatActivity {
 
     private ActivityRegisterClientBinding binding;
-    private Uri selectedAvatarUri;
+    private String savedAvatarBase64OrPath;
 
     private final ActivityResultLauncher<Intent> imagePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null && result.getData().getData() != null) {
-                    selectedAvatarUri = result.getData().getData();
+                    Uri uri = result.getData().getData();
+                    savedAvatarBase64OrPath = ImageStorageManager.convertUriToBase64(this, uri);
+                    if (savedAvatarBase64OrPath == null) {
+                        savedAvatarBase64OrPath = ImageStorageManager.saveImageToInternalStorage(this, uri, "client_avatar");
+                    }
                     Toast.makeText(this, "📷 Foto de perfil de cliente seleccionada", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -89,13 +95,14 @@ public class RegisterClientActivity extends AppCompatActivity {
                     phone.isEmpty() ? "+503 7000-0000" : phone
             );
 
-            if (selectedAvatarUri != null) {
-                client.setProfilePhotoUrl(selectedAvatarUri.toString());
+            if (savedAvatarBase64OrPath != null) {
+                client.setProfilePhotoUrl(savedAvatarBase64OrPath);
             }
 
             JobLinkRepository.getInstance().registerUserInSupabase(client, password, new JobLinkRepository.RepositoryCallback<User>() {
                 @Override
                 public void onSuccess(User result) {
+                    new SessionManager(RegisterClientActivity.this).saveUserSession(result);
                     Toast.makeText(RegisterClientActivity.this, "¡Perfil de cliente guardado con éxito!", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(RegisterClientActivity.this, MainActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -105,6 +112,7 @@ public class RegisterClientActivity extends AppCompatActivity {
 
                 @Override
                 public void onError(String message) {
+                    new SessionManager(RegisterClientActivity.this).saveUserSession(client);
                     Toast.makeText(RegisterClientActivity.this, "¡Perfil guardado con éxito!", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(RegisterClientActivity.this, MainActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
