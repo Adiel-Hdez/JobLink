@@ -14,6 +14,7 @@ import sv.edu.itca.joblink.MainActivity;
 import sv.edu.itca.joblink.databinding.FragmentHomeBinding;
 import sv.edu.itca.joblink.model.User;
 import sv.edu.itca.joblink.repository.JobLinkRepository;
+import sv.edu.itca.joblink.util.ImageStorageManager;
 
 public class HomeFragment extends Fragment {
 
@@ -30,14 +31,7 @@ public class HomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        User currentUser = JobLinkRepository.getInstance().getCurrentUser();
-        if (currentUser != null) {
-            binding.tvHomeGreeting.setText("¡BIENVENIDO " + currentUser.getName().toUpperCase() + "!");
-            binding.tvDashboardName.setText(currentUser.getName());
-            binding.tvDashboardTrade.setText(currentUser.getProfession());
-            binding.tvDashboardRating.setText(String.format(java.util.Locale.getDefault(), "%.1f", currentUser.getRating()));
-            binding.tvDashboardReviews.setText("(" + currentUser.getReviewsCount() + " trabajos)");
-        }
+        updateUI();
 
         binding.btnQuickAddGallery.setOnClickListener(v -> 
             Toast.makeText(getContext(), "Función para añadir foto al portafolio", Toast.LENGTH_SHORT).show()
@@ -62,6 +56,27 @@ public class HomeFragment extends Fragment {
                 ((MainActivity) getActivity()).navigateToSettings();
             }
         });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateUI();
+    }
+
+    private void updateUI() {
+        User currentUser = JobLinkRepository.getInstance().getCurrentUser();
+        if (currentUser != null && binding != null) {
+            binding.tvHomeGreeting.setText("¡BIENVENIDO " + currentUser.getName().toUpperCase() + "!");
+            binding.tvDashboardName.setText(currentUser.getName());
+            binding.tvDashboardTrade.setText(currentUser.getProfession());
+            binding.tvDashboardRating.setText(String.format(java.util.Locale.getDefault(), "%.1f", currentUser.getRating()));
+            binding.tvDashboardReviews.setText("(" + currentUser.getReviewsCount() + " trabajos)");
+
+            if (currentUser.getProfilePhotoUrl() != null) {
+                ImageStorageManager.loadImageIntoView(binding.ivDashboardAvatar, currentUser.getProfilePhotoUrl());
+            }
+        }
     }
 
     @Override

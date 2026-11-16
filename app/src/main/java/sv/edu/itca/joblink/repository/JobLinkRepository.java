@@ -164,8 +164,21 @@ public class JobLinkRepository {
                                 String createdId = r.body().get(0).id;
                                 if (callback != null) callback.onSuccess(createdId);
                             } else {
-                                String fallbackId = UUID.randomUUID().toString();
-                                if (callback != null) callback.onSuccess(fallbackId);
+                                // If 409 Conflict, re-fetch pair
+                                SupabaseClient.getApi().findConversacionPair(clienteEq, trabajadorEq).enqueue(new Callback<List<ConversacionDto>>() {
+                                    @Override
+                                    public void onResponse(Call<List<ConversacionDto>> c2, Response<List<ConversacionDto>> r2) {
+                                        if (r2.isSuccessful() && r2.body() != null && !r2.body().isEmpty()) {
+                                            if (callback != null) callback.onSuccess(r2.body().get(0).id);
+                                        } else {
+                                            if (callback != null) callback.onSuccess(UUID.randomUUID().toString());
+                                        }
+                                    }
+                                    @Override
+                                    public void onFailure(Call<List<ConversacionDto>> c2, Throwable t2) {
+                                        if (callback != null) callback.onSuccess(UUID.randomUUID().toString());
+                                    }
+                                });
                             }
                         }
 
@@ -197,8 +210,8 @@ public class JobLinkRepository {
                     conversations.clear();
                     for (ConversacionDto dto : response.body()) {
                         String otherUserId = myUuid.equalsIgnoreCase(dto.clienteId) ? dto.trabajadorUsuarioId : dto.clienteId;
-                        String name = "Usuario JobLink";
-                        String trade = "Contacto";
+                        String name = "Contacto JobLink";
+                        String trade = "Profesional";
 
                         for (User u : workers) {
                             if (u.getId() != null && u.getId().equalsIgnoreCase(otherUserId)) {
@@ -413,36 +426,66 @@ public class JobLinkRepository {
         userDto.id = validUserUuid;
         userDto.fotoPerfilUrl = user.getProfilePhotoUrl();
 
-        SupabaseClient.getApi().createUsuario(userDto).enqueue(new Callback<List<UsuarioDto>>() {
+        // Check if user already exists to PATCH instead of POST (prevents HTTP 409 Conflict!)
+        String emailQuery = "eq." + user.getEmail().trim();
+        SupabaseClient.getApi().getUsuarioByEmail(emailQuery).enqueue(new Callback<List<UsuarioDto>>() {
             @Override
             public void onResponse(Call<List<UsuarioDto>> call, Response<List<UsuarioDto>> response) {
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
-                    UsuarioDto created = response.body().get(0);
-                    user.setId(created.id);
+                    // USER EXISTS -> PATCH /rest/v1/usuarios?id=eq.{UUID}
+                    String existingId = response.body().get(0).id;
+                    user.setId(existingId);
                     currentUser = user;
 
-                    if (user.getRole() == User.Role.WORKER) {
-                        PerfilTrabajadorDto profileDto = new PerfilTrabajadorDto(created.id, 1, user.getBio());
-                        SupabaseClient.getApi().createPerfilTrabajador(profileDto).enqueue(new Callback<List<PerfilTrabajadorDto>>() {
-                            @Override
-                            public void onResponse(Call<List<PerfilTrabajadorDto>> c, Response<List<PerfilTrabajadorDto>> r) {
-                                workers.add(user);
-                                if (callback != null) callback.onSuccess(user);
-                            }
+                    SupabaseClient.getApi().updateUsuario("eq." + existingId, userDto).enqueue(new Callback<List<UsuarioDto>>() {
+                        @Override
+                        public void onResponse(Call<List<UsuarioDto>> c, Response<List<UsuarioDto>> r) {
+                            if (callback != null) callback.onSuccess(user);
+                        }
 
-                            @Override
-                            public void onFailure(Call<List<PerfilTrabajadorDto>> c, Throwable t) {
-                                workers.add(user);
-                                if (callback != null) callback.onSuccess(user);
-                            }
-                        });
-                    } else {
-                        if (callback != null) callback.onSuccess(user);
-                    }
+                        @Override
+                        public void onFailure(Call<List<UsuarioDto>> c, Throwable t) {
+                            if (callback != null) callback.onSuccess(user);
+                        }
+                    });
                 } else {
-                    currentUser = user;
-                    if (user.getRole() == User.Role.WORKER) workers.add(user);
-                    if (callback != null) callback.onSuccess(user);
+                    // NEW USER -> POST /rest/v1/usuarios
+                    SupabaseClient.getApi().createUsuario(userDto).enqueue(new Callback<List<UsuarioDto>>() {
+                        @Override
+                        public void onResponse(Call<List<UsuarioDto>> c, Response<List<UsuarioDto>> r) {
+                            if (r.isSuccessful() && r.body() != null && !r.body().isEmpty()) {
+                                UsuarioDto created = r.body().get(0);
+                                user.setId(created.id);
+                            }
+                            currentUser = user;
+
+                            if (user.getRole() == User.Role.WORKER) {
+                                PerfilTrabajadorDto profileDto = new PerfilTrabajadorDto(user.getId(), 1, user.getBio());
+                                SupabaseClient.getApi().createPerfilTrabajador(profileDto).enqueue(new Callback<List<PerfilTrabajadorDto>>() {
+                                    @Override
+                                    public void onResponse(Call<List<PerfilTrabajadorDto>> c2, Response<List<PerfilTrabajadorDto>> r2) {
+                                        workers.add(user);
+                                        if (callback != null) callback.onSuccess(user);
+                                    }
+
+                                    @Override
+                                    public void onFailure(Call<List<PerfilTrabajadorDto>> c2, Throwable t2) {
+                                        workers.add(user);
+                                        if (callback != null) callback.onSuccess(user);
+                                    }
+                                });
+                            } else {
+                                if (callback != null) callback.onSuccess(user);
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<List<UsuarioDto>> c, Throwable t) {
+                            currentUser = user;
+                            if (user.getRole() == User.Role.WORKER) workers.add(user);
+                            if (callback != null) callback.onSuccess(user);
+                        }
+                    });
                 }
             }
 

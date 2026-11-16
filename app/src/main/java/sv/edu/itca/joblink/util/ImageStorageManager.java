@@ -32,8 +32,8 @@ public class ImageStorageManager {
             if (inputStream != null) inputStream.close();
 
             int sampleSize = 1;
-            int reqWidth = 500;
-            int reqHeight = 500;
+            int reqWidth = 400;
+            int reqHeight = 400;
             if (options.outHeight > reqHeight || options.outWidth > reqWidth) {
                 final int halfHeight = options.outHeight / 2;
                 final int halfWidth = options.outWidth / 2;
@@ -52,7 +52,7 @@ public class ImageStorageManager {
             if (bitmap == null) return null;
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 75, outputStream);
             byte[] byteArray = outputStream.toByteArray();
             outputStream.close();
 
@@ -82,7 +82,7 @@ public class ImageStorageManager {
 
             File file = new File(directory, fileNamePrefix + "_" + System.currentTimeMillis() + ".jpg");
             FileOutputStream fileOutputStream = new FileOutputStream(file);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, fileOutputStream);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 75, fileOutputStream);
             fileOutputStream.flush();
             fileOutputStream.close();
 
@@ -102,8 +102,7 @@ public class ImageStorageManager {
         try {
             String str = imageStr.trim();
 
-            if (str.startsWith("data:image") || str.length() > 200) {
-                // Base64 string from Supabase
+            if (str.startsWith("data:image") || str.length() > 100) {
                 String cleanBase64 = str;
                 if (str.contains(",")) {
                     cleanBase64 = str.substring(str.indexOf(",") + 1);

@@ -11,6 +11,7 @@ import java.util.List;
 
 import sv.edu.itca.joblink.databinding.ItemWorkerCardBinding;
 import sv.edu.itca.joblink.model.User;
+import sv.edu.itca.joblink.util.ImageStorageManager;
 
 public class WorkerAdapter extends RecyclerView.Adapter<WorkerAdapter.WorkerViewHolder> {
 
@@ -64,6 +65,10 @@ public class WorkerAdapter extends RecyclerView.Adapter<WorkerAdapter.WorkerView
             binding.tvWorkerCardLocation.setText(worker.getLocation());
             binding.tvWorkerCardBio.setText(worker.getBio());
             binding.tvWorkerCardRating.setText(String.format(java.util.Locale.getDefault(), "%.1f", worker.getRating()));
+
+            if (worker.getProfilePhotoUrl() != null) {
+                ImageStorageManager.loadImageIntoView(binding.ivWorkerCardAvatar, worker.getProfilePhotoUrl());
+            }
 
             if (worker.isPremium()) {
                 binding.tvWorkerCardPremiumBadge.setVisibility(View.VISIBLE);
