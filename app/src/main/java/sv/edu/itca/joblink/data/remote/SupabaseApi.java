@@ -5,7 +5,6 @@ import java.util.List;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
-import retrofit2.http.Headers;
 import retrofit2.http.PATCH;
 import retrofit2.http.POST;
 import retrofit2.http.Query;
@@ -24,7 +23,6 @@ public interface SupabaseApi {
     @GET("rest/v1/categorias_oficios?select=*")
     Call<List<CategoriaOficioDto>> getCategoriasOficios();
 
-    @Headers({"Prefer: return=representation"})
     @POST("rest/v1/categorias_oficios")
     Call<List<CategoriaOficioDto>> createCategoriaOficio(@Body CategoriaOficioDto dto);
 
@@ -35,11 +33,9 @@ public interface SupabaseApi {
     @GET("rest/v1/usuarios")
     Call<List<UsuarioDto>> getUsuarioById(@Query("id") String idEq);
 
-    @Headers({"Prefer: return=representation"})
     @POST("rest/v1/usuarios")
     Call<List<UsuarioDto>> createUsuario(@Body UsuarioDto dto);
 
-    @Headers({"Prefer: return=representation"})
     @PATCH("rest/v1/usuarios")
     Call<List<UsuarioDto>> updateUsuario(@Query("id") String idEq, @Body UsuarioDto dto);
 
@@ -47,11 +43,9 @@ public interface SupabaseApi {
     @GET("rest/v1/perfiles_trabajadores?select=*,usuarios(*),categorias_oficios(*)")
     Call<List<PerfilTrabajadorDto>> getPerfilesTrabajadores();
 
-    @Headers({"Prefer: return=representation"})
     @POST("rest/v1/perfiles_trabajadores")
     Call<List<PerfilTrabajadorDto>> createPerfilTrabajador(@Body PerfilTrabajadorDto dto);
 
-    @Headers({"Prefer: return=representation"})
     @PATCH("rest/v1/perfiles_trabajadores")
     Call<List<PerfilTrabajadorDto>> updatePerfilTrabajador(@Query("id") String idEq, @Body PerfilTrabajadorDto dto);
 
@@ -59,7 +53,6 @@ public interface SupabaseApi {
     @GET("rest/v1/portafolio_trabajos?select=*")
     Call<List<PortafolioTrabajoDto>> getPortafolioByTrabajador(@Query("trabajador_id") String trabajadorIdEq);
 
-    @Headers({"Prefer: return=representation"})
     @POST("rest/v1/portafolio_trabajos")
     Call<List<PortafolioTrabajoDto>> addPortafolioItem(@Body PortafolioTrabajoDto dto);
 
@@ -67,7 +60,6 @@ public interface SupabaseApi {
     @GET("rest/v1/solicitudes_trabajo?select=*")
     Call<List<SolicitudTrabajoDto>> getSolicitudesTrabajo();
 
-    @Headers({"Prefer: return=representation"})
     @POST("rest/v1/solicitudes_trabajo")
     Call<List<SolicitudTrabajoDto>> createSolicitudTrabajo(@Body SolicitudTrabajoDto dto);
 
@@ -81,7 +73,6 @@ public interface SupabaseApi {
     @GET("rest/v1/conversaciones?select=*")
     Call<List<ConversacionDto>> findConversacionPair(@Query("cliente_id") String clienteEq, @Query("trabajador_usuario_id") String trabajadorEq);
 
-    @Headers({"Prefer: return=representation"})
     @POST("rest/v1/conversaciones")
     Call<List<ConversacionDto>> createConversacion(@Body ConversacionDto dto);
 
@@ -89,7 +80,6 @@ public interface SupabaseApi {
     @GET("rest/v1/mensajes?select=*")
     Call<List<MensajeDto>> getMensajesByConversacion(@Query("conversacion_id") String conversacionIdEq, @Query("order") String orderClause);
 
-    @Headers({"Prefer: return=representation"})
     @POST("rest/v1/mensajes")
     Call<List<MensajeDto>> sendMensaje(@Body MensajeDto dto);
 
@@ -97,7 +87,6 @@ public interface SupabaseApi {
     @GET("rest/v1/valoraciones?select=*")
     Call<List<ValoracionDto>> getValoraciones();
 
-    @Headers({"Prefer: return=representation"})
     @POST("rest/v1/valoraciones")
     Call<List<ValoracionDto>> createValoracion(@Body ValoracionDto dto);
 }

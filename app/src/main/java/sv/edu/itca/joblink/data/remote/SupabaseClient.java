@@ -29,6 +29,7 @@ public class SupabaseClient {
                                     .header("apikey", anonKey)
                                     .header("Authorization", "Bearer " + anonKey)
                                     .header("Content-Type", "application/json")
+                                    .header("Prefer", "return=representation")
                                     .method(original.method(), original.body())
                                     .build();
                             return chain.proceed(request);
