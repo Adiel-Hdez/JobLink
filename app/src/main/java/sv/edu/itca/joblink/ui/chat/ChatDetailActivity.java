@@ -19,6 +19,7 @@ import java.util.List;
 
 import sv.edu.itca.joblink.databinding.ActivityChatDetailBinding;
 import sv.edu.itca.joblink.model.ChatMessage;
+import sv.edu.itca.joblink.model.User;
 import sv.edu.itca.joblink.model.WorkOrder;
 import sv.edu.itca.joblink.repository.JobLinkRepository;
 import sv.edu.itca.joblink.ui.adapter.ChatMessageAdapter;
@@ -28,7 +29,9 @@ public class ChatDetailActivity extends AppCompatActivity {
     private ActivityChatDetailBinding binding;
     private ChatMessageAdapter adapter;
     private final List<ChatMessage> messageList = new ArrayList<>();
-    private String conversationId = "conv1";
+
+    private String conversationId = null;
+    private String contactId = null;
     private String contactName = "Moisés Adiel Rivera Hernández";
     private String contactProfession = "Albañilería y Enchapado";
 
@@ -36,8 +39,10 @@ public class ChatDetailActivity extends AppCompatActivity {
     private final Runnable pollRunnable = new Runnable() {
         @Override
         public void run() {
-            loadMessagesFromSupabase();
-            pollHandler.postDelayed(this, 3000); // Auto-refresh messages every 3 seconds
+            if (conversationId != null) {
+                loadMessagesFromSupabase();
+            }
+            pollHandler.postDelayed(this, 2500); // Auto-refresh messages every 2.5s
         }
     };
 
@@ -54,6 +59,9 @@ public class ChatDetailActivity extends AppCompatActivity {
             return insets;
         });
 
+        if (getIntent().hasExtra("contact_id")) {
+            contactId = getIntent().getStringExtra("contact_id");
+        }
         if (getIntent().hasExtra("contact_name")) {
             contactName = getIntent().getStringExtra("contact_name");
         }
@@ -71,12 +79,47 @@ public class ChatDetailActivity extends AppCompatActivity {
         binding.rvMessages.setLayoutManager(new LinearLayoutManager(this));
         binding.rvMessages.setAdapter(adapter);
 
+        User currentUser = JobLinkRepository.getInstance().getCurrentUser();
+        String myUuid = currentUser != null && currentUser.getId() != null ? currentUser.getId() : "client_uuid";
+        String targetWorkerUuid = contactId != null ? contactId : "w_moises";
+
+        // Step A: Get or Create Conversation Room in Supabase
+        if (conversationId == null) {
+            JobLinkRepository.getInstance().getOrCreateConversacionInSupabase(myUuid, targetWorkerUuid, new JobLinkRepository.RepositoryCallback<String>() {
+                @Override
+                public void onSuccess(String result) {
+                    conversationId = result;
+                    loadMessagesFromSupabase();
+                }
+
+                @Override
+                public void onError(String message) {
+                    conversationId = "conv_fallback";
+                    loadMessagesFromSupabase();
+                }
+            });
+        } else {
+            loadMessagesFromSupabase();
+        }
+
         binding.btnSendMessage.setOnClickListener(v -> {
             String text = binding.etMessageInput.getText() != null ? binding.etMessageInput.getText().toString().trim() : "";
             if (!text.isEmpty()) {
                 binding.etMessageInput.setText("");
-                JobLinkRepository.getInstance().sendMensajeToSupabase(conversationId, text, null);
-                loadMessagesFromSupabase();
+                String convToUse = conversationId != null ? conversationId : "conv_fallback";
+                
+                // Post message with exact conversacion_id & sender_id
+                JobLinkRepository.getInstance().sendMensajeToSupabase(convToUse, text, new JobLinkRepository.RepositoryCallback<Boolean>() {
+                    @Override
+                    public void onSuccess(Boolean result) {
+                        loadMessagesFromSupabase();
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        loadMessagesFromSupabase();
+                    }
+                });
             }
         });
 
@@ -96,6 +139,8 @@ public class ChatDetailActivity extends AppCompatActivity {
     }
 
     private void loadMessagesFromSupabase() {
+        if (conversationId == null) return;
+
         JobLinkRepository.getInstance().fetchMensajesFromSupabase(conversationId, new JobLinkRepository.RepositoryCallback<List<ChatMessage>>() {
             @Override
             public void onSuccess(List<ChatMessage> result) {

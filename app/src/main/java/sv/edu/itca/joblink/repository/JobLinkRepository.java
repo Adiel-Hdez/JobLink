@@ -122,24 +122,77 @@ public class JobLinkRepository {
 
     // --- REALTIME CHAT & SUPABASE INTEGRATION ---
 
+    public void getOrCreateConversacionInSupabase(String clienteUuid, String trabajadorUsuarioUuid, RepositoryCallback<String> callback) {
+        if (clienteUuid == null || trabajadorUsuarioUuid == null) {
+            if (callback != null) callback.onError("IDs nulos");
+            return;
+        }
+
+        String clienteEq = "eq." + clienteUuid.trim();
+        String trabajadorEq = "eq." + trabajadorUsuarioUuid.trim();
+
+        SupabaseClient.getApi().findConversacionPair(clienteEq, trabajadorEq).enqueue(new Callback<List<ConversacionDto>>() {
+            @Override
+            public void onResponse(Call<List<ConversacionDto>> call, Response<List<ConversacionDto>> response) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    String convId = response.body().get(0).id;
+                    if (callback != null) callback.onSuccess(convId);
+                } else {
+                    // Create new conversation pair
+                    ConversacionDto newDto = new ConversacionDto(clienteUuid, trabajadorUsuarioUuid);
+                    SupabaseClient.getApi().createConversacion(newDto).enqueue(new Callback<List<ConversacionDto>>() {
+                        @Override
+                        public void onResponse(Call<List<ConversacionDto>> c, Response<List<ConversacionDto>> r) {
+                            if (r.isSuccessful() && r.body() != null && !r.body().isEmpty()) {
+                                String createdId = r.body().get(0).id;
+                                if (callback != null) callback.onSuccess(createdId);
+                            } else {
+                                String fallbackId = "conv_" + System.currentTimeMillis();
+                                if (callback != null) callback.onSuccess(fallbackId);
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<List<ConversacionDto>> c, Throwable t) {
+                            String fallbackId = "conv_" + System.currentTimeMillis();
+                            if (callback != null) callback.onSuccess(fallbackId);
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<ConversacionDto>> call, Throwable t) {
+                String fallbackId = "conv_" + System.currentTimeMillis();
+                if (callback != null) callback.onSuccess(fallbackId);
+            }
+        });
+    }
+
     public void fetchConversacionesFromSupabase(RepositoryCallback<List<ChatConversation>> callback) {
-        SupabaseClient.getApi().getConversaciones().enqueue(new Callback<List<ConversacionDto>>() {
+        String myUuid = currentUser != null && currentUser.getId() != null ? currentUser.getId() : "";
+        String orFilter = "(cliente_id.eq." + myUuid + ",trabajador_usuario_id.eq." + myUuid + ")";
+
+        SupabaseClient.getApi().getConversacionesOrUser(orFilter).enqueue(new Callback<List<ConversacionDto>>() {
             @Override
             public void onResponse(Call<List<ConversacionDto>> call, Response<List<ConversacionDto>> response) {
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                     conversations.clear();
                     for (ConversacionDto dto : response.body()) {
-                        String name = "Contacto JobLink";
-                        String trade = "Profesional";
+                        String otherUserId = myUuid.equalsIgnoreCase(dto.clienteId) ? dto.trabajadorUsuarioId : dto.clienteId;
+                        String name = "Usuario JobLink";
+                        String trade = "Contacto";
+
                         for (User u : workers) {
-                            if (u.getId() != null && (u.getId().equals(dto.trabajadorUsuarioId) || u.getId().equals(dto.clienteId))) {
+                            if (u.getId() != null && u.getId().equalsIgnoreCase(otherUserId)) {
                                 name = u.getName();
                                 trade = u.getProfession();
                                 break;
                             }
                         }
+
                         conversations.add(new ChatConversation(
-                                dto.id, name, trade, "Mensaje de conversación", "Ahora", 0
+                                dto.id, name, trade, "Toca para abrir la conversación", "Ahora", 0
                         ));
                     }
                 }
@@ -154,15 +207,22 @@ public class JobLinkRepository {
     }
 
     public void fetchMensajesFromSupabase(String conversationId, RepositoryCallback<List<ChatMessage>> callback) {
-        String query = "eq." + conversationId;
-        SupabaseClient.getApi().getMensajesByConversacion(query).enqueue(new Callback<List<MensajeDto>>() {
+        if (conversationId == null) {
+            if (callback != null) callback.onSuccess(new ArrayList<>());
+            return;
+        }
+
+        String query = "eq." + conversationId.trim();
+        SupabaseClient.getApi().getMensajesByConversacion(query, "fecha_envio.asc").enqueue(new Callback<List<MensajeDto>>() {
             @Override
             public void onResponse(Call<List<MensajeDto>> call, Response<List<MensajeDto>> response) {
                 List<ChatMessage> list = new ArrayList<>();
+                String myUuid = currentUser != null && currentUser.getId() != null ? currentUser.getId() : "";
+
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                     for (MensajeDto dto : response.body()) {
-                        boolean isMine = currentUser != null && currentUser.getId() != null && currentUser.getId().equals(dto.remitenteId);
-                        String timeStr = dto.fechaEnvio != null && dto.fechaEnvio.length() >= 16 ? dto.fechaEnvio.substring(11, 16) : "10:00 AM";
+                        boolean isMine = dto.remitenteId != null && dto.remitenteId.equalsIgnoreCase(myUuid);
+                        String timeStr = dto.fechaEnvio != null && dto.fechaEnvio.length() >= 16 ? dto.fechaEnvio.substring(11, 16) : "Ahora";
                         list.add(new ChatMessage(String.valueOf(dto.id), dto.remitenteId, dto.contenido, timeStr, isMine));
                     }
                     chatMessagesMap.put(conversationId, list);
@@ -182,14 +242,14 @@ public class JobLinkRepository {
     }
 
     public void sendMensajeToSupabase(String conversationId, String text, RepositoryCallback<Boolean> callback) {
-        String myId = currentUser != null && currentUser.getId() != null ? currentUser.getId() : "a1b2c3d4-e5f6-7890-1234-567890abcdef";
-        String targetConvId = conversationId != null && conversationId.length() > 10 ? conversationId : "a1b2c3d4-e5f6-7890-1234-567890abcdef";
+        String myUuid = currentUser != null && currentUser.getId() != null ? currentUser.getId() : "client_anon";
 
-        MensajeDto dto = new MensajeDto(targetConvId, myId, text);
-
-        // Add locally first for instant feedback
+        // Local instant update
         List<ChatMessage> list = getChatMessages(conversationId);
-        list.add(new ChatMessage("m_" + System.currentTimeMillis(), myId, text, "Ahora", true));
+        ChatMessage myMsg = new ChatMessage("m_" + System.currentTimeMillis(), myUuid, text, "Ahora", true);
+        list.add(myMsg);
+
+        MensajeDto dto = new MensajeDto(conversationId, myUuid, text);
 
         SupabaseClient.getApi().sendMensaje(dto).enqueue(new Callback<List<MensajeDto>>() {
             @Override
@@ -219,6 +279,9 @@ public class JobLinkRepository {
                             "Usuario de JobLink", 5.0, 10, true,
                             u.telefono != null ? u.telefono : "+503 7000-0000"
                     );
+                    if (u.fotoPerfilUrl != null) {
+                        user.setProfilePhotoUrl(u.fotoPerfilUrl);
+                    }
                     currentUser = user;
                     if (callback != null) callback.onSuccess(user);
                 } else {
@@ -291,6 +354,9 @@ public class JobLinkRepository {
                                 dto.calificacionPromedio != null ? dto.calificacionPromedio : 5.0,
                                 12, true, phone
                         );
+                        if (dto.usuario != null && dto.usuario.fotoPerfilUrl != null) {
+                            w.setProfilePhotoUrl(dto.usuario.fotoPerfilUrl);
+                        }
                         if (Boolean.TRUE.equals(dto.esPremium)) {
                             w.setPremium(true);
                         }
@@ -321,6 +387,7 @@ public class JobLinkRepository {
                 user.getLocation() != null ? user.getLocation() : "Santa Ana",
                 roleStr
         );
+        userDto.fotoPerfilUrl = user.getProfilePhotoUrl();
 
         SupabaseClient.getApi().createUsuario(userDto).enqueue(new Callback<List<UsuarioDto>>() {
             @Override

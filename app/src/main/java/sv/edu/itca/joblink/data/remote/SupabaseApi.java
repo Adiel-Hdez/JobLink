@@ -32,6 +32,9 @@ public interface SupabaseApi {
     @GET("rest/v1/usuarios")
     Call<List<UsuarioDto>> getUsuarioByEmail(@Query("email") String emailEq);
 
+    @GET("rest/v1/usuarios")
+    Call<List<UsuarioDto>> getUsuarioById(@Query("id") String idEq);
+
     @Headers({"Prefer: return=representation"})
     @POST("rest/v1/usuarios")
     Call<List<UsuarioDto>> createUsuario(@Body UsuarioDto dto);
@@ -72,13 +75,19 @@ public interface SupabaseApi {
     @GET("rest/v1/conversaciones?select=*")
     Call<List<ConversacionDto>> getConversaciones();
 
+    @GET("rest/v1/conversaciones?select=*")
+    Call<List<ConversacionDto>> getConversacionesOrUser(@Query("or") String orFilter);
+
+    @GET("rest/v1/conversaciones?select=*")
+    Call<List<ConversacionDto>> findConversacionPair(@Query("cliente_id") String clienteEq, @Query("trabajador_usuario_id") String trabajadorEq);
+
     @Headers({"Prefer: return=representation"})
     @POST("rest/v1/conversaciones")
     Call<List<ConversacionDto>> createConversacion(@Body ConversacionDto dto);
 
     // 7. Mensajes
     @GET("rest/v1/mensajes?select=*")
-    Call<List<MensajeDto>> getMensajesByConversacion(@Query("conversacion_id") String conversacionIdEq);
+    Call<List<MensajeDto>> getMensajesByConversacion(@Query("conversacion_id") String conversacionIdEq, @Query("order") String orderClause);
 
     @Headers({"Prefer: return=representation"})
     @POST("rest/v1/mensajes")
