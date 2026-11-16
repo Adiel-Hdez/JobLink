@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -27,6 +28,13 @@ public class JobLinkRepository {
     private static final String TAG = "JobLinkRepository";
     private static JobLinkRepository instance;
 
+    // Fixed Valid UUIDs for default mock users (PostgreSQL UUID compliant)
+    public static final String MOISES_UUID = "a1b2c3d4-e5f6-7890-1234-567890abc001";
+    public static final String CARLOS_UUID = "a1b2c3d4-e5f6-7890-1234-567890abc002";
+    public static final String MARTA_UUID  = "a1b2c3d4-e5f6-7890-1234-567890abc003";
+    public static final String PEDRO_UUID  = "a1b2c3d4-e5f6-7890-1234-567890abc004";
+    public static final String ANA_UUID    = "a1b2c3d4-e5f6-7890-1234-567890abc005";
+
     private User currentUser;
     private final List<TradeCategory> categories = new ArrayList<>();
     private final List<User> workers = new ArrayList<>();
@@ -39,12 +47,24 @@ public class JobLinkRepository {
         void onError(String message);
     }
 
+    public static String ensureValidUuid(String id) {
+        if (id == null || id.trim().length() != 36) {
+            return UUID.randomUUID().toString();
+        }
+        try {
+            UUID.fromString(id.trim());
+            return id.trim();
+        } catch (Exception e) {
+            return UUID.randomUUID().toString();
+        }
+    }
+
     private JobLinkRepository() {
         initCategories();
         initWorkers();
         initWorkOrders();
 
-        // Default current user: Moisés (Worker)
+        // Default current user: Moisés
         currentUser = workers.get(0);
 
         // Sync with Supabase on startup
@@ -60,50 +80,50 @@ public class JobLinkRepository {
     }
 
     private void initCategories() {
-        categories.add(new TradeCategory("c1", "Albañilería y Enchapado", "Construcción y Mejoras del Hogar", "Muros, aceras, cerámica y remodelaciones"));
-        categories.add(new TradeCategory("c2", "Carpintería y Ebanistería", "Construcción y Mejoras del Hogar", "Muebles a medida, puertas, closets"));
-        categories.add(new TradeCategory("c3", "Balconería y Soldadura", "Construcción y Mejoras del Hogar", "Portones, balcones y estructuras metálicas"));
-        categories.add(new TradeCategory("c4", "Cielo Falso y Tabla Yeso", "Construcción y Mejoras del Hogar", "Gypsum, cielo falso e iluminación empotrada"));
-        categories.add(new TradeCategory("c5", "Pintura e Impermeabilización", "Construcción y Mejoras del Hogar", "Pintura de fachadas, impermeabilización de techos"));
+        categories.add(new TradeCategory("1", "Albañilería y Enchapado", "Construcción y Mejoras del Hogar", "Muros, aceras, cerámica y remodelaciones"));
+        categories.add(new TradeCategory("2", "Carpintería y Ebanistería", "Construcción y Mejoras del Hogar", "Muebles a medida, puertas, closets"));
+        categories.add(new TradeCategory("3", "Balconería y Soldadura", "Construcción y Mejoras del Hogar", "Portones, balcones y estructuras metálicas"));
+        categories.add(new TradeCategory("4", "Cielo Falso y Tabla Yeso", "Construcción y Mejoras del Hogar", "Gypsum, cielo falso e iluminación empotrada"));
+        categories.add(new TradeCategory("5", "Pintura e Impermeabilización", "Construcción y Mejoras del Hogar", "Pintura de fachadas, impermeabilización de techos"));
 
-        categories.add(new TradeCategory("c6", "Fontanería", "Instalaciones y Mantenimiento Técnico", "Reparación de fugas, cañerías, sanitarios y tanques"));
-        categories.add(new TradeCategory("c7", "Electricidad Residencial", "Instalaciones y Mantenimiento Técnico", "Cableado, cajas térmicas, ventiladores y duchas"));
-        categories.add(new TradeCategory("c8", "Aire Acondicionado", "Instalaciones y Mantenimiento Técnico", "Instalación y mantenimiento de minisplits"));
-        categories.add(new TradeCategory("c9", "Reparación de Línea Blanca", "Instalaciones y Mantenimiento Técnico", "Refrigeradoras, lavadoras y cocinas a domicilio"));
-        categories.add(new TradeCategory("c10", "Cerrajería", "Instalaciones y Mantenimiento Técnico", "Aperturas de emergencia y cambio de chapas"));
+        categories.add(new TradeCategory("6", "Fontanería", "Instalaciones y Mantenimiento Técnico", "Reparación de fugas, cañerías, sanitarios y tanques"));
+        categories.add(new TradeCategory("7", "Electricidad Residencial", "Instalaciones y Mantenimiento Técnico", "Cableado, cajas térmicas, ventiladores y duchas"));
+        categories.add(new TradeCategory("8", "Aire Acondicionado", "Instalaciones y Mantenimiento Técnico", "Instalación y mantenimiento de minisplits"));
+        categories.add(new TradeCategory("9", "Reparación de Línea Blanca", "Instalaciones y Mantenimiento Técnico", "Refrigeradoras, lavadoras y cocinas a domicilio"));
+        categories.add(new TradeCategory("10", "Cerrajería", "Instalaciones y Mantenimiento Técnico", "Aperturas de emergencia y cambio de chapas"));
 
-        categories.add(new TradeCategory("c11", "Costura y Sastrería", "Textiles, Calzado y Tapicería", "Prendas a medida, uniformes y ajustes de ropa"));
-        categories.add(new TradeCategory("c12", "Tapicería", "Textiles, Calzado y Tapicería", "Restauración de juegos de sala y asientos de autos"));
-        categories.add(new TradeCategory("c13", "Zapatería Artesanal", "Textiles, Calzado y Tapicería", "Reparación de calzado, bolsos y mochilas"));
+        categories.add(new TradeCategory("11", "Costura y Sastrería", "Textiles, Calzado y Tapicería", "Prendas a medida, uniformes y ajustes de ropa"));
+        categories.add(new TradeCategory("12", "Tapicería", "Textiles, Calzado y Tapicería", "Restauración de juegos de sala y asientos de autos"));
+        categories.add(new TradeCategory("13", "Zapatería Artesanal", "Textiles, Calzado y Tapicería", "Reparación de calzado, bolsos y mochilas"));
 
-        categories.add(new TradeCategory("c14", "Jardinería y Poda", "Exteriores y Servicios del Hogar", "Corte de grama, diseño de jardines y poda"));
-        categories.add(new TradeCategory("c15", "Limpieza Especializada", "Exteriores y Servicios del Hogar", "Lavado en seco de muebles, alfombras y cisternas"));
-        categories.add(new TradeCategory("c16", "Control de Plagas", "Exteriores y Servicios del Hogar", "Fumigación de casas y tratamiento de termitas"));
+        categories.add(new TradeCategory("14", "Jardinería y Poda", "Exteriores y Servicios del Hogar", "Corte de grama, diseño de jardines y poda"));
+        categories.add(new TradeCategory("15", "Limpieza Especializada", "Exteriores y Servicios del Hogar", "Lavado en seco de muebles, alfombras y cisternas"));
+        categories.add(new TradeCategory("16", "Control de Plagas", "Exteriores y Servicios del Hogar", "Fumigación de casas y tratamiento de termitas"));
     }
 
     private void initWorkers() {
-        User moises = new User("w_moises", "Moisés Adiel Rivera Hernández", "adielrhernandez22@gmail.com", User.Role.WORKER, 
+        User moises = new User(MOISES_UUID, "Moisés Adiel Rivera Hernández", "adielrhernandez22@gmail.com", User.Role.WORKER, 
                 "Albañilería y Enchapado", "Construcción y Mejoras del Hogar", "Santa Ana, El Salvador", 
                 "Especialista profesional en construcción de muros, cerámica, enchapados y remodelaciones en Santa Ana.", 
                 5.0, 15, true, "+503 7000-2222");
         moises.setPremium(true);
 
-        User carlos = new User("w1", "Carlos G.", "carlos@joblink.sv", User.Role.WORKER, 
+        User carlos = new User(CARLOS_UUID, "Carlos G.", "carlos@joblink.sv", User.Role.WORKER, 
                 "Carpintero", "Carpintería y Ebanistería", "Santa Ana, El Salvador", 
                 "Experto ebanista con más de 10 años elaborando muebles finos y remodelaciones en madera.", 
                 4.8, 35, true, "+503 7123-4567");
 
-        User marta = new User("w2", "Marta L.", "marta@joblink.sv", User.Role.WORKER, 
+        User marta = new User(MARTA_UUID, "Marta L.", "marta@joblink.sv", User.Role.WORKER, 
                 "Costurera", "Costura y Sastrería", "Santa Ana Centro", 
                 "Descripción del Taller de Costura: Especialistas en vestidos de gala, trajes a medida y confección de alta calidad.", 
                 4.8, 42, true, "+503 7234-5678");
 
-        User pedro = new User("w3", "Pedro R.", "pedro@joblink.sv", User.Role.WORKER, 
+        User pedro = new User(PEDRO_UUID, "Pedro R.", "pedro@joblink.sv", User.Role.WORKER, 
                 "Albañil y Enchapador", "Albañilería y Enchapado", "Santa Ana, Col. El Palmar", 
                 "Construcción de muros, pegado de cerámica, remodelación de baños y cocinas.", 
                 4.9, 50, false, "+503 7345-6789");
 
-        User ana = new User("w4", "Ana M.", "ana@joblink.sv", User.Role.WORKER, 
+        User ana = new User(ANA_UUID, "Ana M.", "ana@joblink.sv", User.Role.WORKER, 
                 "Técnica en Línea Blanca", "Reparación de Línea Blanca", "Santa Ana, IVU", 
                 "Diagnóstico y reparación a domicilio de refrigeradoras, cocinas y lavadoras.", 
                 4.7, 28, true, "+503 7456-7890");
@@ -120,16 +140,14 @@ public class JobLinkRepository {
         workOrders.add(new WorkOrder("wo2", "Reparación Silla", "Ana M.", "Moisés Adiel Rivera Hernández", 80, "En Curso"));
     }
 
-    // --- REALTIME CHAT & SUPABASE INTEGRATION ---
+    // --- REALTIME CHAT & SUPABASE INTEGRATION WITH VALID UUIDs ---
 
     public void getOrCreateConversacionInSupabase(String clienteUuid, String trabajadorUsuarioUuid, RepositoryCallback<String> callback) {
-        if (clienteUuid == null || trabajadorUsuarioUuid == null) {
-            if (callback != null) callback.onError("IDs nulos");
-            return;
-        }
+        final String validClientUuid = ensureValidUuid(clienteUuid);
+        final String validWorkerUuid = ensureValidUuid(trabajadorUsuarioUuid);
 
-        String clienteEq = "eq." + clienteUuid.trim();
-        String trabajadorEq = "eq." + trabajadorUsuarioUuid.trim();
+        String clienteEq = "eq." + validClientUuid;
+        String trabajadorEq = "eq." + validWorkerUuid;
 
         SupabaseClient.getApi().findConversacionPair(clienteEq, trabajadorEq).enqueue(new Callback<List<ConversacionDto>>() {
             @Override
@@ -138,8 +156,7 @@ public class JobLinkRepository {
                     String convId = response.body().get(0).id;
                     if (callback != null) callback.onSuccess(convId);
                 } else {
-                    // Create new conversation pair
-                    ConversacionDto newDto = new ConversacionDto(clienteUuid, trabajadorUsuarioUuid);
+                    ConversacionDto newDto = new ConversacionDto(validClientUuid, validWorkerUuid);
                     SupabaseClient.getApi().createConversacion(newDto).enqueue(new Callback<List<ConversacionDto>>() {
                         @Override
                         public void onResponse(Call<List<ConversacionDto>> c, Response<List<ConversacionDto>> r) {
@@ -147,14 +164,14 @@ public class JobLinkRepository {
                                 String createdId = r.body().get(0).id;
                                 if (callback != null) callback.onSuccess(createdId);
                             } else {
-                                String fallbackId = "conv_" + System.currentTimeMillis();
+                                String fallbackId = UUID.randomUUID().toString();
                                 if (callback != null) callback.onSuccess(fallbackId);
                             }
                         }
 
                         @Override
                         public void onFailure(Call<List<ConversacionDto>> c, Throwable t) {
-                            String fallbackId = "conv_" + System.currentTimeMillis();
+                            String fallbackId = UUID.randomUUID().toString();
                             if (callback != null) callback.onSuccess(fallbackId);
                         }
                     });
@@ -163,14 +180,14 @@ public class JobLinkRepository {
 
             @Override
             public void onFailure(Call<List<ConversacionDto>> call, Throwable t) {
-                String fallbackId = "conv_" + System.currentTimeMillis();
+                String fallbackId = UUID.randomUUID().toString();
                 if (callback != null) callback.onSuccess(fallbackId);
             }
         });
     }
 
     public void fetchConversacionesFromSupabase(RepositoryCallback<List<ChatConversation>> callback) {
-        String myUuid = currentUser != null && currentUser.getId() != null ? currentUser.getId() : "";
+        String myUuid = ensureValidUuid(currentUser != null ? currentUser.getId() : null);
         String orFilter = "(cliente_id.eq." + myUuid + ",trabajador_usuario_id.eq." + myUuid + ")";
 
         SupabaseClient.getApi().getConversacionesOrUser(orFilter).enqueue(new Callback<List<ConversacionDto>>() {
@@ -192,7 +209,7 @@ public class JobLinkRepository {
                         }
 
                         conversations.add(new ChatConversation(
-                                dto.id, name, trade, "Toca para abrir la conversación", "Ahora", 0
+                                dto.id, name, trade, "Toca para abrir el chat", "Ahora", 0
                         ));
                     }
                 }
@@ -212,12 +229,14 @@ public class JobLinkRepository {
             return;
         }
 
-        String query = "eq." + conversationId.trim();
+        String validConvUuid = ensureValidUuid(conversationId);
+        String query = "eq." + validConvUuid;
+
         SupabaseClient.getApi().getMensajesByConversacion(query, "fecha_envio.asc").enqueue(new Callback<List<MensajeDto>>() {
             @Override
             public void onResponse(Call<List<MensajeDto>> call, Response<List<MensajeDto>> response) {
                 List<ChatMessage> list = new ArrayList<>();
-                String myUuid = currentUser != null && currentUser.getId() != null ? currentUser.getId() : "";
+                String myUuid = ensureValidUuid(currentUser != null ? currentUser.getId() : null);
 
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                     for (MensajeDto dto : response.body()) {
@@ -242,14 +261,15 @@ public class JobLinkRepository {
     }
 
     public void sendMensajeToSupabase(String conversationId, String text, RepositoryCallback<Boolean> callback) {
-        String myUuid = currentUser != null && currentUser.getId() != null ? currentUser.getId() : "client_anon";
+        String myUuid = ensureValidUuid(currentUser != null ? currentUser.getId() : null);
+        String validConvUuid = ensureValidUuid(conversationId);
 
-        // Local instant update
+        // Local update
         List<ChatMessage> list = getChatMessages(conversationId);
         ChatMessage myMsg = new ChatMessage("m_" + System.currentTimeMillis(), myUuid, text, "Ahora", true);
         list.add(myMsg);
 
-        MensajeDto dto = new MensajeDto(conversationId, myUuid, text);
+        MensajeDto dto = new MensajeDto(validConvUuid, myUuid, text);
 
         SupabaseClient.getApi().sendMensaje(dto).enqueue(new Callback<List<MensajeDto>>() {
             @Override
@@ -306,7 +326,7 @@ public class JobLinkRepository {
                 return w;
             }
         }
-        return new User("usr_local", "Moisés Adiel Rivera Hernández", email, User.Role.WORKER, "Albañilería y Enchapado", "General", "Santa Ana", "Usuario de JobLink", 5.0, 5, true, "+503 7000-0000");
+        return new User(MOISES_UUID, "Moisés Adiel Rivera Hernández", email, User.Role.WORKER, "Albañilería y Enchapado", "General", "Santa Ana", "Usuario de JobLink", 5.0, 5, true, "+503 7000-0000");
     }
 
     public void fetchCategoriesFromSupabase(RepositoryCallback<List<TradeCategory>> callback) {
@@ -348,7 +368,7 @@ public class JobLinkRepository {
                         String trade = dto.categoria != null && dto.categoria.nombre != null ? dto.categoria.nombre : "Albañilería y Enchapado";
 
                         User w = new User(
-                                dto.usuarioId != null ? dto.usuarioId : "w_" + dto.id,
+                                dto.usuarioId != null ? ensureValidUuid(dto.usuarioId) : UUID.randomUUID().toString(),
                                 name, email, User.Role.WORKER, trade, trade, location,
                                 dto.descripcionProfesional != null ? dto.descripcionProfesional : "Servicio profesional en Santa Ana",
                                 dto.calificacionPromedio != null ? dto.calificacionPromedio : 5.0,
@@ -378,6 +398,9 @@ public class JobLinkRepository {
     }
 
     public void registerUserInSupabase(User user, String password, RepositoryCallback<User> callback) {
+        String validUserUuid = ensureValidUuid(user.getId());
+        user.setId(validUserUuid);
+
         String roleStr = user.getRole() == User.Role.WORKER ? "trabajador" : "cliente";
         UsuarioDto userDto = new UsuarioDto(
                 user.getName(),
@@ -387,6 +410,7 @@ public class JobLinkRepository {
                 user.getLocation() != null ? user.getLocation() : "Santa Ana",
                 roleStr
         );
+        userDto.id = validUserUuid;
         userDto.fotoPerfilUrl = user.getProfilePhotoUrl();
 
         SupabaseClient.getApi().createUsuario(userDto).enqueue(new Callback<List<UsuarioDto>>() {
@@ -454,8 +478,10 @@ public class JobLinkRepository {
     public void addWorkOrder(WorkOrder order) {
         workOrders.add(order);
 
+        String myUuid = ensureValidUuid(currentUser != null ? currentUser.getId() : null);
+
         SolicitudTrabajoDto dto = new SolicitudTrabajoDto(
-                currentUser.getId() != null ? currentUser.getId() : "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                myUuid,
                 1,
                 order.getTitle(),
                 "Detalles de la solicitud desde el chat",
