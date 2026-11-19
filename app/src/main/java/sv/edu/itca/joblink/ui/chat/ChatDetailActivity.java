@@ -80,8 +80,15 @@ public class ChatDetailActivity extends AppCompatActivity {
         binding.rvMessages.setAdapter(adapter);
 
         User currentUser = JobLinkRepository.getInstance().getCurrentUser();
-        String myUuid = currentUser != null && currentUser.getId() != null ? currentUser.getId() : "client_uuid";
-        String targetWorkerUuid = contactId != null ? contactId : "w_moises";
+        if (currentUser == null) {
+            currentUser = new sv.edu.itca.joblink.util.SessionManager(this).getUserSession();
+            if (currentUser != null) {
+                JobLinkRepository.getInstance().setCurrentUser(currentUser);
+            }
+        }
+
+        String myUuid = currentUser != null && currentUser.getId() != null ? currentUser.getId() : JobLinkRepository.ensureValidUuid(null);
+        String targetWorkerUuid = contactId != null ? JobLinkRepository.ensureValidUuid(contactId) : JobLinkRepository.ensureValidUuid(null);
 
         // Step A: Get or Create Conversation Room in Supabase
         if (conversationId == null) {
@@ -94,7 +101,7 @@ public class ChatDetailActivity extends AppCompatActivity {
 
                 @Override
                 public void onError(String message) {
-                    conversationId = "conv_fallback";
+                    conversationId = JobLinkRepository.ensureValidUuid(null);
                     loadMessagesFromSupabase();
                 }
             });
@@ -106,7 +113,7 @@ public class ChatDetailActivity extends AppCompatActivity {
             String text = binding.etMessageInput.getText() != null ? binding.etMessageInput.getText().toString().trim() : "";
             if (!text.isEmpty()) {
                 binding.etMessageInput.setText("");
-                String convToUse = conversationId != null ? conversationId : "conv_fallback";
+                String convToUse = conversationId != null ? conversationId : JobLinkRepository.ensureValidUuid(null);
                 
                 // Post message with exact conversacion_id & sender_id
                 JobLinkRepository.getInstance().sendMensajeToSupabase(convToUse, text, new JobLinkRepository.RepositoryCallback<Boolean>() {

@@ -95,9 +95,14 @@ public class ImageStorageManager {
 
     /**
      * Renders Base64 strings, file paths, or Uris into an ImageView seamlessly.
+     * Clears image tint list so that vector tinting in XML doesn't obscure the bitmap image.
      */
     public static void loadImageIntoView(ImageView imageView, String imageStr) {
-        if (imageView == null || imageStr == null || imageStr.trim().isEmpty()) return;
+        if (imageView == null) return;
+        if (imageStr == null || imageStr.trim().isEmpty()) {
+            resetAvatarToDefault(imageView);
+            return;
+        }
 
         try {
             String str = imageStr.trim();
@@ -110,8 +115,10 @@ public class ImageStorageManager {
                 byte[] decodedBytes = Base64.decode(cleanBase64, Base64.NO_WRAP);
                 Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
                 if (bitmap != null) {
+                    imageView.setImageTintList(null);
                     imageView.setImageBitmap(bitmap);
                     imageView.setPadding(0, 0, 0, 0);
+                    imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
                     return;
                 }
             }
@@ -121,19 +128,37 @@ public class ImageStorageManager {
                 if (imgFile.exists()) {
                     Bitmap myBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
                     if (myBitmap != null) {
+                        imageView.setImageTintList(null);
                         imageView.setImageBitmap(myBitmap);
                         imageView.setPadding(0, 0, 0, 0);
+                        imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
                         return;
                     }
                 }
             }
 
             if (str.startsWith("content://") || str.startsWith("http")) {
+                imageView.setImageTintList(null);
                 imageView.setImageURI(Uri.parse(str));
                 imageView.setPadding(0, 0, 0, 0);
+                imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                return;
             }
+
+            resetAvatarToDefault(imageView);
         } catch (Exception e) {
             Log.e(TAG, "Error rendering image: " + e.getMessage());
+            resetAvatarToDefault(imageView);
         }
+    }
+
+    public static void resetAvatarToDefault(ImageView imageView) {
+        if (imageView == null) return;
+        try {
+            imageView.setImageResource(sv.edu.itca.joblink.R.drawable.ic_person);
+            imageView.setImageTintList(android.content.res.ColorStateList.valueOf(
+                    imageView.getContext().getColor(sv.edu.itca.joblink.R.color.navy_primary)
+            ));
+        } catch (Exception ignored) {}
     }
 }

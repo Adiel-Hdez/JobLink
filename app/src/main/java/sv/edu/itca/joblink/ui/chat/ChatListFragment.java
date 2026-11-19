@@ -86,6 +86,7 @@ public class ChatListFragment extends Fragment implements ConversationAdapter.On
     public void onConversationClick(ChatConversation conversation) {
         Intent intent = new Intent(getContext(), ChatDetailActivity.class);
         intent.putExtra("conversation_id", conversation.getId());
+        intent.putExtra("contact_id", conversation.getContactId());
         intent.putExtra("contact_name", conversation.getContactName());
         intent.putExtra("contact_profession", conversation.getContactProfession());
         startActivity(intent);

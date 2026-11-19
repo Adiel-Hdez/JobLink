@@ -34,6 +34,8 @@ public class PremiumSubscriptionActivity extends AppCompatActivity {
             User user = JobLinkRepository.getInstance().getCurrentUser();
             if (user != null) {
                 user.setPremium(true);
+                new sv.edu.itca.joblink.util.SessionManager(this).saveUserSession(user);
+                JobLinkRepository.getInstance().updateWorkerPremiumStatusInSupabase(user.getId(), true, null);
                 Toast.makeText(this, "⭐ ¡Felicidades! Ahora eres un Profesional PREMIUM por $2.99/mes", Toast.LENGTH_LONG).show();
                 finish();
             }

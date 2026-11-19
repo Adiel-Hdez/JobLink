@@ -16,6 +16,7 @@ import sv.edu.itca.joblink.data.remote.dto.CategoriaOficioDto;
 import sv.edu.itca.joblink.data.remote.dto.ConversacionDto;
 import sv.edu.itca.joblink.data.remote.dto.MensajeDto;
 import sv.edu.itca.joblink.data.remote.dto.PerfilTrabajadorDto;
+import sv.edu.itca.joblink.data.remote.dto.PortafolioTrabajoDto;
 import sv.edu.itca.joblink.data.remote.dto.SolicitudTrabajoDto;
 import sv.edu.itca.joblink.data.remote.dto.UsuarioDto;
 import sv.edu.itca.joblink.model.ChatConversation;
@@ -27,13 +28,6 @@ import sv.edu.itca.joblink.model.WorkOrder;
 public class JobLinkRepository {
     private static final String TAG = "JobLinkRepository";
     private static JobLinkRepository instance;
-
-    // Fixed Valid UUIDs for default mock users (PostgreSQL UUID compliant)
-    public static final String MOISES_UUID = "a1b2c3d4-e5f6-7890-1234-567890abc001";
-    public static final String CARLOS_UUID = "a1b2c3d4-e5f6-7890-1234-567890abc002";
-    public static final String MARTA_UUID  = "a1b2c3d4-e5f6-7890-1234-567890abc003";
-    public static final String PEDRO_UUID  = "a1b2c3d4-e5f6-7890-1234-567890abc004";
-    public static final String ANA_UUID    = "a1b2c3d4-e5f6-7890-1234-567890abc005";
 
     private User currentUser;
     private final List<TradeCategory> categories = new ArrayList<>();
@@ -48,12 +42,11 @@ public class JobLinkRepository {
     }
 
     public static String ensureValidUuid(String id) {
-        if (id == null || id.trim().length() != 36) {
+        if (id == null || id.trim().isEmpty()) {
             return UUID.randomUUID().toString();
         }
         try {
-            UUID.fromString(id.trim());
-            return id.trim();
+            return UUID.fromString(id.trim()).toString();
         } catch (Exception e) {
             return UUID.randomUUID().toString();
         }
@@ -61,12 +54,6 @@ public class JobLinkRepository {
 
     private JobLinkRepository() {
         initCategories();
-        initWorkers();
-        initWorkOrders();
-
-        // Default current user: Moisés
-        currentUser = workers.get(0);
-
         // Sync with Supabase on startup
         fetchCategoriesFromSupabase(null);
         fetchWorkersFromSupabase(null);
@@ -80,6 +67,7 @@ public class JobLinkRepository {
     }
 
     private void initCategories() {
+        categories.clear();
         categories.add(new TradeCategory("1", "Albañilería y Enchapado", "Construcción y Mejoras del Hogar", "Muros, aceras, cerámica y remodelaciones"));
         categories.add(new TradeCategory("2", "Carpintería y Ebanistería", "Construcción y Mejoras del Hogar", "Muebles a medida, puertas, closets"));
         categories.add(new TradeCategory("3", "Balconería y Soldadura", "Construcción y Mejoras del Hogar", "Portones, balcones y estructuras metálicas"));
@@ -101,46 +89,19 @@ public class JobLinkRepository {
         categories.add(new TradeCategory("16", "Control de Plagas", "Exteriores y Servicios del Hogar", "Fumigación de casas y tratamiento de termitas"));
     }
 
-    private void initWorkers() {
-        User moises = new User(MOISES_UUID, "Moisés Adiel Rivera Hernández", "adielrhernandez22@gmail.com", User.Role.WORKER, 
-                "Albañilería y Enchapado", "Construcción y Mejoras del Hogar", "Santa Ana, El Salvador", 
-                "Especialista profesional en construcción de muros, cerámica, enchapados y remodelaciones en Santa Ana.", 
-                5.0, 15, true, "+503 7000-2222");
-        moises.setPremium(true);
-
-        User carlos = new User(CARLOS_UUID, "Carlos G.", "carlos@joblink.sv", User.Role.WORKER, 
-                "Carpintero", "Carpintería y Ebanistería", "Santa Ana, El Salvador", 
-                "Experto ebanista con más de 10 años elaborando muebles finos y remodelaciones en madera.", 
-                4.8, 35, true, "+503 7123-4567");
-
-        User marta = new User(MARTA_UUID, "Marta L.", "marta@joblink.sv", User.Role.WORKER, 
-                "Costurera", "Costura y Sastrería", "Santa Ana Centro", 
-                "Descripción del Taller de Costura: Especialistas en vestidos de gala, trajes a medida y confección de alta calidad.", 
-                4.8, 42, true, "+503 7234-5678");
-
-        User pedro = new User(PEDRO_UUID, "Pedro R.", "pedro@joblink.sv", User.Role.WORKER, 
-                "Albañil y Enchapador", "Albañilería y Enchapado", "Santa Ana, Col. El Palmar", 
-                "Construcción de muros, pegado de cerámica, remodelación de baños y cocinas.", 
-                4.9, 50, false, "+503 7345-6789");
-
-        User ana = new User(ANA_UUID, "Ana M.", "ana@joblink.sv", User.Role.WORKER, 
-                "Técnica en Línea Blanca", "Reparación de Línea Blanca", "Santa Ana, IVU", 
-                "Diagnóstico y reparación a domicilio de refrigeradoras, cocinas y lavadoras.", 
-                4.7, 28, true, "+503 7456-7890");
-
-        workers.add(moises);
-        workers.add(carlos);
-        workers.add(marta);
-        workers.add(pedro);
-        workers.add(ana);
+    public int getCategoryIdByName(String name) {
+        if (name == null) return 1;
+        for (TradeCategory cat : categories) {
+            if (cat.getName().equalsIgnoreCase(name.trim()) || name.trim().toLowerCase().contains(cat.getName().toLowerCase())) {
+                try {
+                    return Integer.parseInt(cat.getId());
+                } catch (Exception ignored) {}
+            }
+        }
+        return 1;
     }
 
-    private void initWorkOrders() {
-        workOrders.add(new WorkOrder("wo1", "Mesa para Pedro", "Pedro R.", "Moisés Adiel Rivera Hernández", 50, "En Curso"));
-        workOrders.add(new WorkOrder("wo2", "Reparación Silla", "Ana M.", "Moisés Adiel Rivera Hernández", 80, "En Curso"));
-    }
-
-    // --- REALTIME CHAT & SUPABASE INTEGRATION WITH VALID UUIDs ---
+    // --- REALTIME CHAT & SUPABASE INTEGRATION ---
 
     public void getOrCreateConversacionInSupabase(String clienteUuid, String trabajadorUsuarioUuid, RepositoryCallback<String> callback) {
         final String validClientUuid = ensureValidUuid(clienteUuid);
@@ -156,26 +117,30 @@ public class JobLinkRepository {
                     String convId = response.body().get(0).id;
                     if (callback != null) callback.onSuccess(convId);
                 } else {
-                    ConversacionDto newDto = new ConversacionDto(validClientUuid, validWorkerUuid);
-                    SupabaseClient.getApi().createConversacion(newDto).enqueue(new Callback<List<ConversacionDto>>() {
+                    // Try reverse pair
+                    SupabaseClient.getApi().findConversacionPair(trabajadorEq, clienteEq).enqueue(new Callback<List<ConversacionDto>>() {
                         @Override
-                        public void onResponse(Call<List<ConversacionDto>> c, Response<List<ConversacionDto>> r) {
-                            if (r.isSuccessful() && r.body() != null && !r.body().isEmpty()) {
-                                String createdId = r.body().get(0).id;
-                                if (callback != null) callback.onSuccess(createdId);
+                        public void onResponse(Call<List<ConversacionDto>> cReverse, Response<List<ConversacionDto>> rReverse) {
+                            if (rReverse.isSuccessful() && rReverse.body() != null && !rReverse.body().isEmpty()) {
+                                String convId = rReverse.body().get(0).id;
+                                if (callback != null) callback.onSuccess(convId);
                             } else {
-                                // If 409 Conflict, re-fetch pair
-                                SupabaseClient.getApi().findConversacionPair(clienteEq, trabajadorEq).enqueue(new Callback<List<ConversacionDto>>() {
+                                // Create new conversation
+                                ConversacionDto newDto = new ConversacionDto(validClientUuid, validWorkerUuid);
+                                SupabaseClient.getApi().createConversacion(newDto).enqueue(new Callback<List<ConversacionDto>>() {
                                     @Override
-                                    public void onResponse(Call<List<ConversacionDto>> c2, Response<List<ConversacionDto>> r2) {
-                                        if (r2.isSuccessful() && r2.body() != null && !r2.body().isEmpty()) {
-                                            if (callback != null) callback.onSuccess(r2.body().get(0).id);
+                                    public void onResponse(Call<List<ConversacionDto>> c, Response<List<ConversacionDto>> r) {
+                                        if (r.isSuccessful() && r.body() != null && !r.body().isEmpty()) {
+                                            String createdId = r.body().get(0).id;
+                                            if (callback != null) callback.onSuccess(createdId);
                                         } else {
+                                            // Final check fallback
                                             if (callback != null) callback.onSuccess(UUID.randomUUID().toString());
                                         }
                                     }
+
                                     @Override
-                                    public void onFailure(Call<List<ConversacionDto>> c2, Throwable t2) {
+                                    public void onFailure(Call<List<ConversacionDto>> c, Throwable t) {
                                         if (callback != null) callback.onSuccess(UUID.randomUUID().toString());
                                     }
                                 });
@@ -183,9 +148,8 @@ public class JobLinkRepository {
                         }
 
                         @Override
-                        public void onFailure(Call<List<ConversacionDto>> c, Throwable t) {
-                            String fallbackId = UUID.randomUUID().toString();
-                            if (callback != null) callback.onSuccess(fallbackId);
+                        public void onFailure(Call<List<ConversacionDto>> cReverse, Throwable tReverse) {
+                            if (callback != null) callback.onSuccess(UUID.randomUUID().toString());
                         }
                     });
                 }
@@ -193,45 +157,142 @@ public class JobLinkRepository {
 
             @Override
             public void onFailure(Call<List<ConversacionDto>> call, Throwable t) {
-                String fallbackId = UUID.randomUUID().toString();
-                if (callback != null) callback.onSuccess(fallbackId);
+                if (callback != null) callback.onSuccess(UUID.randomUUID().toString());
             }
         });
     }
 
     public void fetchConversacionesFromSupabase(RepositoryCallback<List<ChatConversation>> callback) {
-        String myUuid = ensureValidUuid(currentUser != null ? currentUser.getId() : null);
+        if (currentUser == null || currentUser.getId() == null) {
+            conversations.clear();
+            if (callback != null) callback.onSuccess(conversations);
+            return;
+        }
+
+        String myUuid = ensureValidUuid(currentUser.getId());
         String orFilter = "(cliente_id.eq." + myUuid + ",trabajador_usuario_id.eq." + myUuid + ")";
 
         SupabaseClient.getApi().getConversacionesOrUser(orFilter).enqueue(new Callback<List<ConversacionDto>>() {
             @Override
             public void onResponse(Call<List<ConversacionDto>> call, Response<List<ConversacionDto>> response) {
+                conversations.clear();
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
-                    conversations.clear();
-                    for (ConversacionDto dto : response.body()) {
+                    List<ConversacionDto> dtoList = response.body();
+                    List<ChatConversation> tempConvs = new ArrayList<>();
+                    
+                    final int[] remaining = {dtoList.size()};
+
+                    for (ConversacionDto dto : dtoList) {
                         String otherUserId = myUuid.equalsIgnoreCase(dto.clienteId) ? dto.trabajadorUsuarioId : dto.clienteId;
-                        String name = "Contacto JobLink";
-                        String trade = "Profesional";
 
-                        for (User u : workers) {
-                            if (u.getId() != null && u.getId().equalsIgnoreCase(otherUserId)) {
-                                name = u.getName();
-                                trade = u.getProfession();
-                                break;
-                            }
-                        }
+                        // Find contact info locally or query Supabase
+                        fetchContactInfo(otherUserId, (contactUser) -> {
+                            String name = contactUser != null ? contactUser.getName() : "Usuario JobLink";
+                            String profession = contactUser != null ? contactUser.getProfession() : "Servicio";
+                            String photoUrl = contactUser != null ? contactUser.getProfilePhotoUrl() : null;
 
-                        conversations.add(new ChatConversation(
-                                dto.id, name, trade, "Toca para abrir el chat", "Ahora", 0
-                        ));
+                            // Fetch last message for this conversation
+                            SupabaseClient.getApi().getUltimoMensaje("eq." + dto.id, "fecha_envio.desc", 1).enqueue(new Callback<List<MensajeDto>>() {
+                                @Override
+                                public void onResponse(Call<List<MensajeDto>> cMsg, Response<List<MensajeDto>> rMsg) {
+                                    String text = "Conversación iniciada";
+                                    String timeStr = "Ahora";
+
+                                    if (rMsg.isSuccessful() && rMsg.body() != null && !rMsg.body().isEmpty()) {
+                                        MensajeDto lastMsg = rMsg.body().get(0);
+                                        if (lastMsg.contenido != null && !lastMsg.contenido.isEmpty()) {
+                                            text = lastMsg.contenido;
+                                        }
+                                        if (lastMsg.fechaEnvio != null && lastMsg.fechaEnvio.length() >= 16) {
+                                            timeStr = lastMsg.fechaEnvio.substring(11, 16);
+                                        }
+                                    }
+
+                                    ChatConversation conv = new ChatConversation(
+                                            dto.id, otherUserId, name, profession, photoUrl, text, timeStr, 0
+                                    );
+                                    tempConvs.add(conv);
+
+                                    remaining[0]--;
+                                    if (remaining[0] <= 0) {
+                                        conversations.clear();
+                                        conversations.addAll(tempConvs);
+                                        if (callback != null) callback.onSuccess(conversations);
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(Call<List<MensajeDto>> cMsg, Throwable tMsg) {
+                                    ChatConversation conv = new ChatConversation(
+                                            dto.id, otherUserId, name, profession, photoUrl, "Conversación iniciada", "Ahora", 0
+                                    );
+                                    tempConvs.add(conv);
+
+                                    remaining[0]--;
+                                    if (remaining[0] <= 0) {
+                                        conversations.clear();
+                                        conversations.addAll(tempConvs);
+                                        if (callback != null) callback.onSuccess(conversations);
+                                    }
+                                }
+                            });
+                        });
                     }
+                } else {
+                    if (callback != null) callback.onSuccess(conversations);
                 }
-                if (callback != null) callback.onSuccess(conversations);
             }
 
             @Override
             public void onFailure(Call<List<ConversacionDto>> call, Throwable t) {
+                conversations.clear();
                 if (callback != null) callback.onSuccess(conversations);
+            }
+        });
+    }
+
+    private interface UserResultCallback {
+        void onUserLoaded(User user);
+    }
+
+    private void fetchContactInfo(String userId, UserResultCallback callback) {
+        if (userId == null) {
+            callback.onUserLoaded(null);
+            return;
+        }
+
+        // Check workers list first
+        for (User u : workers) {
+            if (u.getId() != null && u.getId().equalsIgnoreCase(userId)) {
+                callback.onUserLoaded(u);
+                return;
+            }
+        }
+
+        // Query Supabase usuarios table
+        SupabaseClient.getApi().getUsuarioById("eq." + userId).enqueue(new Callback<List<UsuarioDto>>() {
+            @Override
+            public void onResponse(Call<List<UsuarioDto>> call, Response<List<UsuarioDto>> response) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    UsuarioDto u = response.body().get(0);
+                    User.Role role = "trabajador".equalsIgnoreCase(u.rol) ? User.Role.WORKER : User.Role.CLIENT;
+                    User user = new User(
+                            u.id, u.nombreCompleto, u.email, role,
+                            role == User.Role.WORKER ? "Trabajador" : "Cliente",
+                            "General", u.ubicacion != null ? u.ubicacion : "Santa Ana",
+                            "Usuario de JobLink", 5.0, 0, true,
+                            u.telefono != null ? u.telefono : "+503 7000-0000"
+                    );
+                    user.setProfilePhotoUrl(u.fotoPerfilUrl);
+                    callback.onUserLoaded(user);
+                } else {
+                    callback.onUserLoaded(null);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<UsuarioDto>> call, Throwable t) {
+                callback.onUserLoaded(null);
             }
         });
     }
@@ -274,7 +335,12 @@ public class JobLinkRepository {
     }
 
     public void sendMensajeToSupabase(String conversationId, String text, RepositoryCallback<Boolean> callback) {
-        String myUuid = ensureValidUuid(currentUser != null ? currentUser.getId() : null);
+        if (currentUser == null || currentUser.getId() == null) {
+            if (callback != null) callback.onError("Usuario no identificado");
+            return;
+        }
+
+        String myUuid = ensureValidUuid(currentUser.getId());
         String validConvUuid = ensureValidUuid(conversationId);
 
         // Local update
@@ -305,9 +371,10 @@ public class JobLinkRepository {
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                     UsuarioDto u = response.body().get(0);
                     User.Role role = "trabajador".equalsIgnoreCase(u.rol) ? User.Role.WORKER : User.Role.CLIENT;
+                    
                     User user = new User(
                             u.id, u.nombreCompleto, u.email, role,
-                            role == User.Role.WORKER ? "Albañilería y Enchapado" : "Cliente",
+                            role == User.Role.WORKER ? "Trabajador" : "Cliente",
                             "General", u.ubicacion != null ? u.ubicacion : "Santa Ana",
                             "Usuario de JobLink", 5.0, 10, true,
                             u.telefono != null ? u.telefono : "+503 7000-0000"
@@ -315,31 +382,163 @@ public class JobLinkRepository {
                     if (u.fotoPerfilUrl != null) {
                         user.setProfilePhotoUrl(u.fotoPerfilUrl);
                     }
-                    currentUser = user;
-                    if (callback != null) callback.onSuccess(user);
+
+                    if (role == User.Role.WORKER) {
+                        // Fetch worker profile details from Supabase
+                        SupabaseClient.getApi().getPerfilTrabajadorByUsuarioId("eq." + u.id).enqueue(new Callback<List<PerfilTrabajadorDto>>() {
+                            @Override
+                            public void onResponse(Call<List<PerfilTrabajadorDto>> c, Response<List<PerfilTrabajadorDto>> r) {
+                                if (r.isSuccessful() && r.body() != null && !r.body().isEmpty()) {
+                                    PerfilTrabajadorDto p = r.body().get(0);
+                                    if (p.descripcionProfesional != null) user.setBio(p.descripcionProfesional);
+                                    if (p.calificacionPromedio != null) user.setRating(p.calificacionPromedio);
+                                    if (Boolean.TRUE.equals(p.esPremium)) user.setPremium(true);
+                                    if (p.categoria != null && p.categoria.nombre != null) {
+                                        user.setProfession(p.categoria.nombre);
+                                        user.setCategory(p.categoria.nombre);
+                                    }
+                                }
+                                currentUser = user;
+                                addWorkerToList(user);
+                                if (callback != null) callback.onSuccess(user);
+                            }
+
+                            @Override
+                            public void onFailure(Call<List<PerfilTrabajadorDto>> c, Throwable t) {
+                                currentUser = user;
+                                addWorkerToList(user);
+                                if (callback != null) callback.onSuccess(user);
+                            }
+                        });
+                    } else {
+                        currentUser = user;
+                        if (callback != null) callback.onSuccess(user);
+                    }
                 } else {
-                    User fallback = findLocalUserByEmail(email);
-                    currentUser = fallback;
-                    if (callback != null) callback.onSuccess(fallback);
+                    if (callback != null) callback.onError("Usuario no encontrado con el correo ingresado");
                 }
             }
 
             @Override
             public void onFailure(Call<List<UsuarioDto>> call, Throwable t) {
-                User fallback = findLocalUserByEmail(email);
-                currentUser = fallback;
-                if (callback != null) callback.onSuccess(fallback);
+                if (callback != null) callback.onError("Error al conectar con Supabase: " + t.getMessage());
             }
         });
     }
 
-    private User findLocalUserByEmail(String email) {
-        for (User w : workers) {
-            if (w.getEmail().equalsIgnoreCase(email.trim())) {
-                return w;
+    public void updateWorkerPremiumStatusInSupabase(String usuarioId, boolean isPremium, RepositoryCallback<Boolean> callback) {
+        if (usuarioId == null) return;
+        PerfilTrabajadorDto dto = new PerfilTrabajadorDto();
+        dto.esPremium = isPremium;
+
+        SupabaseClient.getApi().updatePerfilTrabajadorByUsuarioId("eq." + usuarioId, dto).enqueue(new Callback<List<PerfilTrabajadorDto>>() {
+            @Override
+            public void onResponse(Call<List<PerfilTrabajadorDto>> call, Response<List<PerfilTrabajadorDto>> response) {
+                if (callback != null) callback.onSuccess(true);
+            }
+
+            @Override
+            public void onFailure(Call<List<PerfilTrabajadorDto>> call, Throwable t) {
+                if (callback != null) callback.onSuccess(true);
+            }
+        });
+    }
+
+    public void fetchPortfolioFromSupabase(String trabajadorId, RepositoryCallback<List<String>> callback) {
+        if (trabajadorId == null) {
+            if (callback != null) callback.onSuccess(new ArrayList<>());
+            return;
+        }
+
+        int numericProfileId = -1;
+        try {
+            numericProfileId = Integer.parseInt(trabajadorId.trim());
+        } catch (NumberFormatException ignored) {}
+
+        if (numericProfileId > 0) {
+            doFetchPortfolioByNumericId(numericProfileId, callback);
+        } else {
+            int foundProfileId = -1;
+            if (currentUser != null && currentUser.getId() != null && currentUser.getId().equalsIgnoreCase(trabajadorId)) {
+                foundProfileId = currentUser.getWorkerProfileId();
+            }
+            if (foundProfileId <= 0) {
+                for (User u : workers) {
+                    if (u.getId() != null && u.getId().equalsIgnoreCase(trabajadorId) && u.getWorkerProfileId() > 0) {
+                        foundProfileId = u.getWorkerProfileId();
+                        break;
+                    }
+                }
+            }
+
+            if (foundProfileId > 0) {
+                doFetchPortfolioByNumericId(foundProfileId, callback);
+            } else {
+                final String userUuid = trabajadorId;
+                SupabaseClient.getApi().getPerfilTrabajadorByUsuarioId("eq." + userUuid).enqueue(new Callback<List<PerfilTrabajadorDto>>() {
+                    @Override
+                    public void onResponse(Call<List<PerfilTrabajadorDto>> call, Response<List<PerfilTrabajadorDto>> response) {
+                        if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                            PerfilTrabajadorDto p = response.body().get(0);
+                            if (p.id != null && p.id > 0) {
+                                doFetchPortfolioByNumericId(p.id, callback);
+                                return;
+                            }
+                        }
+                        doFetchPortfolioAll(callback);
+                    }
+
+                    @Override
+                    public void onFailure(Call<List<PerfilTrabajadorDto>> call, Throwable t) {
+                        doFetchPortfolioAll(callback);
+                    }
+                });
             }
         }
-        return new User(MOISES_UUID, "Moisés Adiel Rivera Hernández", email, User.Role.WORKER, "Albañilería y Enchapado", "General", "Santa Ana", "Usuario de JobLink", 5.0, 5, true, "+503 7000-0000");
+    }
+
+    private void doFetchPortfolioByNumericId(int profileId, RepositoryCallback<List<String>> callback) {
+        SupabaseClient.getApi().getPortafolioByTrabajador("eq." + profileId).enqueue(new Callback<List<PortafolioTrabajoDto>>() {
+            @Override
+            public void onResponse(Call<List<PortafolioTrabajoDto>> call, Response<List<PortafolioTrabajoDto>> response) {
+                List<String> photos = new ArrayList<>();
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    for (PortafolioTrabajoDto p : response.body()) {
+                        if (p.imagenUrl != null && !p.imagenUrl.isEmpty()) {
+                            photos.add(p.imagenUrl);
+                        }
+                    }
+                }
+                if (callback != null) callback.onSuccess(photos);
+            }
+
+            @Override
+            public void onFailure(Call<List<PortafolioTrabajoDto>> call, Throwable t) {
+                if (callback != null) callback.onSuccess(new ArrayList<>());
+            }
+        });
+    }
+
+    private void doFetchPortfolioAll(RepositoryCallback<List<String>> callback) {
+        SupabaseClient.getApi().getTodosPortafolios().enqueue(new Callback<List<PortafolioTrabajoDto>>() {
+            @Override
+            public void onResponse(Call<List<PortafolioTrabajoDto>> c, Response<List<PortafolioTrabajoDto>> r) {
+                List<String> photos = new ArrayList<>();
+                if (r.isSuccessful() && r.body() != null) {
+                    for (PortafolioTrabajoDto p : r.body()) {
+                        if (p.imagenUrl != null && !p.imagenUrl.isEmpty()) {
+                            photos.add(p.imagenUrl);
+                        }
+                    }
+                }
+                if (callback != null) callback.onSuccess(photos);
+            }
+
+            @Override
+            public void onFailure(Call<List<PortafolioTrabajoDto>> c, Throwable t) {
+                if (callback != null) callback.onSuccess(new ArrayList<>());
+            }
+        });
     }
 
     public void fetchCategoriesFromSupabase(RepositoryCallback<List<TradeCategory>> callback) {
@@ -357,22 +556,43 @@ public class JobLinkRepository {
                         ));
                     }
                     if (callback != null) callback.onSuccess(categories);
+                } else {
+                    seedCategoriesToSupabase();
+                    if (callback != null) callback.onSuccess(categories);
                 }
             }
 
             @Override
             public void onFailure(Call<List<CategoriaOficioDto>> call, Throwable t) {
-                if (callback != null) callback.onError(t.getMessage());
+                if (callback != null) callback.onSuccess(categories);
             }
         });
+    }
+
+    private void seedCategoriesToSupabase() {
+        for (TradeCategory cat : categories) {
+            try {
+                int catId = Integer.parseInt(cat.getId());
+                CategoriaOficioDto dto = new CategoriaOficioDto();
+                dto.id = catId;
+                dto.nombre = cat.getName();
+                dto.descripcion = cat.getDescription();
+                SupabaseClient.getApi().createCategoriaOficio(dto).enqueue(new Callback<List<CategoriaOficioDto>>() {
+                    @Override
+                    public void onResponse(Call<List<CategoriaOficioDto>> call, Response<List<CategoriaOficioDto>> response) {}
+                    @Override
+                    public void onFailure(Call<List<CategoriaOficioDto>> call, Throwable t) {}
+                });
+            } catch (Exception ignored) {}
+        }
     }
 
     public void fetchWorkersFromSupabase(RepositoryCallback<List<User>> callback) {
         SupabaseClient.getApi().getPerfilesTrabajadores().enqueue(new Callback<List<PerfilTrabajadorDto>>() {
             @Override
             public void onResponse(Call<List<PerfilTrabajadorDto>> call, Response<List<PerfilTrabajadorDto>> response) {
+                List<User> loadedWorkers = new ArrayList<>();
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
-                    List<User> loadedWorkers = new ArrayList<>();
                     for (PerfilTrabajadorDto dto : response.body()) {
                         String name = dto.usuario != null && dto.usuario.nombreCompleto != null ? dto.usuario.nombreCompleto : "Trabajador";
                         String email = dto.usuario != null && dto.usuario.email != null ? dto.usuario.email : "user@joblink.sv";
@@ -387,6 +607,9 @@ public class JobLinkRepository {
                                 dto.calificacionPromedio != null ? dto.calificacionPromedio : 5.0,
                                 12, true, phone
                         );
+                        if (dto.id != null) {
+                            w.setWorkerProfileId(dto.id);
+                        }
                         if (dto.usuario != null && dto.usuario.fotoPerfilUrl != null) {
                             w.setProfilePhotoUrl(dto.usuario.fotoPerfilUrl);
                         }
@@ -395,17 +618,50 @@ public class JobLinkRepository {
                         }
                         loadedWorkers.add(w);
                     }
-                    if (!loadedWorkers.isEmpty()) {
+                }
+
+                SupabaseClient.getApi().getUsuariosByRole("eq.trabajador").enqueue(new Callback<List<UsuarioDto>>() {
+                    @Override
+                    public void onResponse(Call<List<UsuarioDto>> c, Response<List<UsuarioDto>> r) {
+                        if (r.isSuccessful() && r.body() != null) {
+                            for (UsuarioDto u : r.body()) {
+                                boolean exists = false;
+                                for (User lw : loadedWorkers) {
+                                    if (lw.getId() != null && lw.getId().equalsIgnoreCase(u.id)) {
+                                        exists = true;
+                                        break;
+                                    }
+                                }
+                                if (!exists) {
+                                    User w = new User(
+                                            u.id, u.nombreCompleto, u.email, User.Role.WORKER,
+                                            "Albañilería y Enchapado", "General",
+                                            u.ubicacion != null ? u.ubicacion : "Santa Ana",
+                                            "Servicio profesional en Santa Ana", 5.0, 0, true,
+                                            u.telefono != null ? u.telefono : "+503 7000-0000"
+                                    );
+                                    w.setProfilePhotoUrl(u.fotoPerfilUrl);
+                                    loadedWorkers.add(w);
+                                }
+                            }
+                        }
                         workers.clear();
                         workers.addAll(loadedWorkers);
+                        if (callback != null) callback.onSuccess(workers);
                     }
-                    if (callback != null) callback.onSuccess(workers);
-                }
+
+                    @Override
+                    public void onFailure(Call<List<UsuarioDto>> c, Throwable t) {
+                        workers.clear();
+                        workers.addAll(loadedWorkers);
+                        if (callback != null) callback.onSuccess(workers);
+                    }
+                });
             }
 
             @Override
             public void onFailure(Call<List<PerfilTrabajadorDto>> call, Throwable t) {
-                if (callback != null) callback.onError(t.getMessage());
+                if (callback != null) callback.onSuccess(workers);
             }
         });
     }
@@ -426,64 +682,55 @@ public class JobLinkRepository {
         userDto.id = validUserUuid;
         userDto.fotoPerfilUrl = user.getProfilePhotoUrl();
 
-        // Check if user already exists to PATCH instead of POST (prevents HTTP 409 Conflict!)
         String emailQuery = "eq." + user.getEmail().trim();
         SupabaseClient.getApi().getUsuarioByEmail(emailQuery).enqueue(new Callback<List<UsuarioDto>>() {
             @Override
             public void onResponse(Call<List<UsuarioDto>> call, Response<List<UsuarioDto>> response) {
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
-                    // USER EXISTS -> PATCH /rest/v1/usuarios?id=eq.{UUID}
                     String existingId = response.body().get(0).id;
                     user.setId(existingId);
-                    currentUser = user;
+                    userDto.id = existingId;
+                    setCurrentUser(user);
 
                     SupabaseClient.getApi().updateUsuario("eq." + existingId, userDto).enqueue(new Callback<List<UsuarioDto>>() {
                         @Override
                         public void onResponse(Call<List<UsuarioDto>> c, Response<List<UsuarioDto>> r) {
-                            if (callback != null) callback.onSuccess(user);
+                            if (r.isSuccessful()) {
+                                createPerfilIfWorker(user, callback);
+                            } else {
+                                Log.e(TAG, "Error updating usuario in Supabase: " + r.code());
+                                createPerfilIfWorker(user, callback);
+                            }
                         }
 
                         @Override
                         public void onFailure(Call<List<UsuarioDto>> c, Throwable t) {
-                            if (callback != null) callback.onSuccess(user);
+                            Log.e(TAG, "Failure updating usuario in Supabase", t);
+                            createPerfilIfWorker(user, callback);
                         }
                     });
                 } else {
-                    // NEW USER -> POST /rest/v1/usuarios
                     SupabaseClient.getApi().createUsuario(userDto).enqueue(new Callback<List<UsuarioDto>>() {
                         @Override
                         public void onResponse(Call<List<UsuarioDto>> c, Response<List<UsuarioDto>> r) {
-                            if (r.isSuccessful() && r.body() != null && !r.body().isEmpty()) {
-                                UsuarioDto created = r.body().get(0);
-                                user.setId(created.id);
-                            }
-                            currentUser = user;
-
-                            if (user.getRole() == User.Role.WORKER) {
-                                PerfilTrabajadorDto profileDto = new PerfilTrabajadorDto(user.getId(), 1, user.getBio());
-                                SupabaseClient.getApi().createPerfilTrabajador(profileDto).enqueue(new Callback<List<PerfilTrabajadorDto>>() {
-                                    @Override
-                                    public void onResponse(Call<List<PerfilTrabajadorDto>> c2, Response<List<PerfilTrabajadorDto>> r2) {
-                                        workers.add(user);
-                                        if (callback != null) callback.onSuccess(user);
-                                    }
-
-                                    @Override
-                                    public void onFailure(Call<List<PerfilTrabajadorDto>> c2, Throwable t2) {
-                                        workers.add(user);
-                                        if (callback != null) callback.onSuccess(user);
-                                    }
-                                });
+                            if (r.isSuccessful()) {
+                                if (r.body() != null && !r.body().isEmpty() && r.body().get(0).id != null) {
+                                    user.setId(r.body().get(0).id);
+                                }
+                                setCurrentUser(user);
+                                createPerfilIfWorker(user, callback);
                             } else {
-                                if (callback != null) callback.onSuccess(user);
+                                Log.e(TAG, "Error creating usuario in Supabase: " + r.code());
+                                setCurrentUser(user);
+                                createPerfilIfWorker(user, callback);
                             }
                         }
 
                         @Override
                         public void onFailure(Call<List<UsuarioDto>> c, Throwable t) {
-                            currentUser = user;
-                            if (user.getRole() == User.Role.WORKER) workers.add(user);
-                            if (callback != null) callback.onSuccess(user);
+                            Log.e(TAG, "Failure creating usuario in Supabase", t);
+                            setCurrentUser(user);
+                            createPerfilIfWorker(user, callback);
                         }
                     });
                 }
@@ -491,16 +738,105 @@ public class JobLinkRepository {
 
             @Override
             public void onFailure(Call<List<UsuarioDto>> call, Throwable t) {
-                currentUser = user;
-                if (user.getRole() == User.Role.WORKER) workers.add(user);
-                if (callback != null) callback.onSuccess(user);
+                Log.e(TAG, "Failure checking usuario in Supabase", t);
+                setCurrentUser(user);
+                createPerfilIfWorker(user, callback);
             }
         });
     }
 
+    private void createPerfilIfWorker(User user, RepositoryCallback<User> callback) {
+        if (user.getRole() == User.Role.WORKER) {
+            int catId = getCategoryIdByName(user.getProfession());
+            PerfilTrabajadorDto profileDto = new PerfilTrabajadorDto(user.getId(), catId, user.getBio());
+
+            SupabaseClient.getApi().getPerfilTrabajadorByUsuarioId("eq." + user.getId()).enqueue(new Callback<List<PerfilTrabajadorDto>>() {
+                @Override
+                public void onResponse(Call<List<PerfilTrabajadorDto>> cExist, Response<List<PerfilTrabajadorDto>> rExist) {
+                    if (rExist.isSuccessful() && rExist.body() != null && !rExist.body().isEmpty()) {
+                        int existingId = rExist.body().get(0).id;
+                        user.setWorkerProfileId(existingId);
+                        SupabaseClient.getApi().updatePerfilTrabajadorByUsuarioId("eq." + user.getId(), profileDto).enqueue(new Callback<List<PerfilTrabajadorDto>>() {
+                            @Override
+                            public void onResponse(Call<List<PerfilTrabajadorDto>> c2, Response<List<PerfilTrabajadorDto>> r2) {
+                                addWorkerToList(user);
+                                if (callback != null) callback.onSuccess(user);
+                            }
+
+                            @Override
+                            public void onFailure(Call<List<PerfilTrabajadorDto>> c2, Throwable t2) {
+                                addWorkerToList(user);
+                                if (callback != null) callback.onSuccess(user);
+                            }
+                        });
+                    } else {
+                        SupabaseClient.getApi().createPerfilTrabajador(profileDto).enqueue(new Callback<List<PerfilTrabajadorDto>>() {
+                            @Override
+                            public void onResponse(Call<List<PerfilTrabajadorDto>> c2, Response<List<PerfilTrabajadorDto>> r2) {
+                                if (r2.isSuccessful() && r2.body() != null && !r2.body().isEmpty()) {
+                                    if (r2.body().get(0).id != null) {
+                                        user.setWorkerProfileId(r2.body().get(0).id);
+                                    }
+                                }
+                                addWorkerToList(user);
+                                if (callback != null) callback.onSuccess(user);
+                            }
+
+                            @Override
+                            public void onFailure(Call<List<PerfilTrabajadorDto>> c2, Throwable t2) {
+                                addWorkerToList(user);
+                                if (callback != null) callback.onSuccess(user);
+                            }
+                        });
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<List<PerfilTrabajadorDto>> cExist, Throwable tExist) {
+                    SupabaseClient.getApi().createPerfilTrabajador(profileDto).enqueue(new Callback<List<PerfilTrabajadorDto>>() {
+                        @Override
+                        public void onResponse(Call<List<PerfilTrabajadorDto>> c2, Response<List<PerfilTrabajadorDto>> r2) {
+                            if (r2.isSuccessful() && r2.body() != null && !r2.body().isEmpty()) {
+                                if (r2.body().get(0).id != null) {
+                                    user.setWorkerProfileId(r2.body().get(0).id);
+                                }
+                            }
+                            addWorkerToList(user);
+                            if (callback != null) callback.onSuccess(user);
+                        }
+
+                        @Override
+                        public void onFailure(Call<List<PerfilTrabajadorDto>> c2, Throwable t2) {
+                            addWorkerToList(user);
+                            if (callback != null) callback.onSuccess(user);
+                        }
+                    });
+                }
+            });
+        } else {
+            if (callback != null) callback.onSuccess(user);
+        }
+    }
+
+    private void addWorkerToList(User user) {
+        for (int i = 0; i < workers.size(); i++) {
+            if (workers.get(i).getId() != null && workers.get(i).getId().equalsIgnoreCase(user.getId())) {
+                workers.set(i, user);
+                return;
+            }
+        }
+        workers.add(user);
+    }
+
     // Getters & Methods
     public User getCurrentUser() { return currentUser; }
-    public void setCurrentUser(User user) { this.currentUser = user; }
+    public void setCurrentUser(User user) {
+        if (this.currentUser == null || user == null || this.currentUser.getId() == null || user.getId() == null || !this.currentUser.getId().equalsIgnoreCase(user.getId())) {
+            conversations.clear();
+            chatMessagesMap.clear();
+        }
+        this.currentUser = user;
+    }
     public List<TradeCategory> getCategories() { return categories; }
     public List<User> getWorkers() { return workers; }
     public List<WorkOrder> getWorkOrders() { return workOrders; }

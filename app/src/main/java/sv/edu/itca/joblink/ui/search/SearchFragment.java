@@ -52,7 +52,35 @@ public class SearchFragment extends Fragment implements WorkerAdapter.OnWorkerCl
         setupSearchFilter();
         setupCategoryChips();
 
-        filterWorkers("");
+        loadWorkersFromSupabase();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        loadWorkersFromSupabase();
+    }
+
+    private void loadWorkersFromSupabase() {
+        JobLinkRepository.getInstance().fetchWorkersFromSupabase(new JobLinkRepository.RepositoryCallback<List<User>>() {
+            @Override
+            public void onSuccess(List<User> result) {
+                if (result != null) {
+                    allWorkers = result;
+                } else {
+                    allWorkers = JobLinkRepository.getInstance().getWorkers();
+                }
+                String currentQuery = binding.etSearchQuery != null && binding.etSearchQuery.getText() != null ? binding.etSearchQuery.getText().toString() : "";
+                filterWorkers(currentQuery);
+            }
+
+            @Override
+            public void onError(String message) {
+                allWorkers = JobLinkRepository.getInstance().getWorkers();
+                String currentQuery = binding.etSearchQuery != null && binding.etSearchQuery.getText() != null ? binding.etSearchQuery.getText().toString() : "";
+                filterWorkers(currentQuery);
+            }
+        });
     }
 
     private void setupSearchFilter() {
@@ -139,6 +167,7 @@ public class SearchFragment extends Fragment implements WorkerAdapter.OnWorkerCl
     @Override
     public void onContactClick(User worker) {
         Intent intent = new Intent(getContext(), ChatDetailActivity.class);
+        intent.putExtra("contact_id", worker.getId());
         intent.putExtra("contact_name", worker.getName());
         intent.putExtra("contact_profession", worker.getProfession());
         startActivity(intent);

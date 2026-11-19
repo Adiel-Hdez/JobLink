@@ -57,9 +57,15 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
             binding.tvConvLastMessage.setText(conversation.getLastMessage());
             binding.tvConvTime.setText(conversation.getTime());
 
+            if (conversation.getContactPhotoUrl() != null && !conversation.getContactPhotoUrl().isEmpty()) {
+                sv.edu.itca.joblink.util.ImageStorageManager.loadImageIntoView(binding.ivConvAvatar, conversation.getContactPhotoUrl());
+            } else {
+                sv.edu.itca.joblink.util.ImageStorageManager.resetAvatarToDefault(binding.ivConvAvatar);
+            }
+
             if (conversation.getUnreadCount() > 0) {
                 binding.tvConvBadge.setVisibility(View.VISIBLE);
-                binding.tvConvBadge.setText("cite: " + conversation.getUnreadCount());
+                binding.tvConvBadge.setText(String.valueOf(conversation.getUnreadCount()));
             } else {
                 binding.tvConvBadge.setVisibility(View.GONE);
             }

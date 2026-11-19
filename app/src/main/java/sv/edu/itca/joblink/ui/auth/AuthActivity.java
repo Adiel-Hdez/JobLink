@@ -66,10 +66,7 @@ public class AuthActivity extends AppCompatActivity {
 
                 @Override
                 public void onError(String message) {
-                    Toast.makeText(AuthActivity.this, "Iniciando sesión en modo local", Toast.LENGTH_SHORT).show();
-                    Intent intent = new Intent(AuthActivity.this, MainActivity.class);
-                    startActivity(intent);
-                    finish();
+                    Toast.makeText(AuthActivity.this, message != null ? message : "Error al iniciar sesión", Toast.LENGTH_LONG).show();
                 }
             });
         });

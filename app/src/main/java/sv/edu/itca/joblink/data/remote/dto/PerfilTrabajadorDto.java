@@ -21,8 +21,7 @@ public class PerfilTrabajadorDto {
     @SerializedName("calificacion_promedio")
     public Double calificacionPromedio;
 
-    @SerializedName("es_premium")
-    public Boolean esPremium;
+    public transient Boolean esPremium;
 
     // Joined objects
     @SerializedName("usuarios")

@@ -42,6 +42,32 @@
             android:textSize="14sp"
             android:gravity="center" />
 
+        <!-- Avatar Selection -->
+        <FrameLayout
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_marginTop="16dp">
+
+            <ImageView
+                android:id="@+id/ivClientAvatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_person"
+                android:background="@drawable/bg_role_card_selected"
+                android:scaleType="centerCrop"
+                android:padding="16dp"
+                app:tint="@color/navy_primary" />
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="bottom|end"
+                android:src="@drawable/ic_add"
+                android:background="@drawable/bg_badge_orange"
+                android:padding="4dp"
+                app:tint="@color/white" />
+        </FrameLayout>
+
         <!-- Form Card Container -->
         <com.google.android.material.card.MaterialCardView
             style="@style/JobLinkCard"

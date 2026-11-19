@@ -10,6 +10,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.util.List;
+
 import sv.edu.itca.joblink.databinding.ActivityWorkerProfileBinding;
 import sv.edu.itca.joblink.model.User;
 import sv.edu.itca.joblink.repository.JobLinkRepository;
@@ -34,6 +36,14 @@ public class WorkerProfileActivity extends AppCompatActivity {
             return insets;
         });
 
+        User currentUser = JobLinkRepository.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            currentUser = new sv.edu.itca.joblink.util.SessionManager(this).getUserSession();
+            if (currentUser != null) {
+                JobLinkRepository.getInstance().setCurrentUser(currentUser);
+            }
+        }
+
         String workerId = getIntent().getStringExtra("worker_id");
         String workerName = getIntent().getStringExtra("worker_name");
         String workerTrade = getIntent().getStringExtra("worker_trade");
@@ -48,6 +58,10 @@ public class WorkerProfileActivity extends AppCompatActivity {
             }
         }
 
+        if (worker == null && currentUser != null && (workerId == null || workerId.equalsIgnoreCase(currentUser.getId()))) {
+            worker = currentUser;
+        }
+
         if (worker == null && workerName != null) {
             for (User u : JobLinkRepository.getInstance().getWorkers()) {
                 if (workerName.equalsIgnoreCase(u.getName())) {
@@ -55,6 +69,10 @@ public class WorkerProfileActivity extends AppCompatActivity {
                     break;
                 }
             }
+        }
+
+        if (worker == null && currentUser != null) {
+            worker = currentUser;
         }
 
         if (worker == null) {
@@ -76,12 +94,21 @@ public class WorkerProfileActivity extends AppCompatActivity {
         binding.tvPublicProfileRating.setText(String.format(java.util.Locale.getDefault(), "%.1f ★", worker.getRating()));
         binding.tvPublicProfileBio.setText(worker.getBio());
 
-        if (worker.getProfilePhotoUrl() != null) {
-            ImageStorageManager.loadImageIntoView(binding.ivPublicProfileAvatar, worker.getProfilePhotoUrl());
+        if (worker.isPremium()) {
+            binding.tvPublicProfilePremiumBadge.setVisibility(View.VISIBLE);
+        } else {
+            binding.tvPublicProfilePremiumBadge.setVisibility(View.GONE);
         }
 
+        if (worker.getProfilePhotoUrl() != null && !worker.getProfilePhotoUrl().isEmpty()) {
+            ImageStorageManager.loadImageIntoView(binding.ivPublicProfileAvatar, worker.getProfilePhotoUrl());
+        } else {
+            ImageStorageManager.resetAvatarToDefault(binding.ivPublicProfileAvatar);
+        }
+
+        loadPortfolioPhotos();
+
         // Hide contact bar if viewing own profile
-        User currentUser = JobLinkRepository.getInstance().getCurrentUser();
         if (currentUser != null && currentUser.getId() != null && currentUser.getId().equalsIgnoreCase(worker.getId())) {
             binding.btnContactarChat.setVisibility(View.GONE);
             binding.bottomChatBar.setVisibility(View.GONE);
@@ -92,6 +119,45 @@ public class WorkerProfileActivity extends AppCompatActivity {
 
         binding.btnContactarChat.setOnClickListener(v -> openChat());
         binding.btnOpenFullChat.setOnClickListener(v -> openChat());
+    }
+
+    private void loadPortfolioPhotos() {
+        if (worker == null) return;
+        List<String> photos = worker.getPortfolioPhotos();
+        if (photos != null && !photos.isEmpty()) {
+            displayPortfolioPhotos(photos);
+        } else {
+            String idToQuery = worker.getWorkerProfileId() > 0 ? String.valueOf(worker.getWorkerProfileId()) : worker.getId();
+            JobLinkRepository.getInstance().fetchPortfolioFromSupabase(idToQuery, new JobLinkRepository.RepositoryCallback<List<String>>() {
+                @Override
+                public void onSuccess(List<String> fetchedPhotos) {
+                    if (fetchedPhotos != null && !fetchedPhotos.isEmpty()) {
+                        worker.setPortfolioPhotos(fetchedPhotos);
+                        displayPortfolioPhotos(fetchedPhotos);
+                    }
+                }
+
+                @Override
+                public void onError(String message) {}
+            });
+        }
+    }
+
+    private void displayPortfolioPhotos(List<String> photos) {
+        android.widget.ImageView[] slots = new android.widget.ImageView[]{
+                binding.ivPublicPortfolioSlot1,
+                binding.ivPublicPortfolioSlot2,
+                binding.ivPublicPortfolioSlot3,
+                binding.ivPublicPortfolioSlot4,
+                binding.ivPublicPortfolioSlot5,
+                binding.ivPublicPortfolioSlot6
+        };
+
+        for (int i = 0; i < slots.length; i++) {
+            if (i < photos.size() && photos.get(i) != null && !photos.get(i).isEmpty()) {
+                ImageStorageManager.loadImageIntoView(slots[i], photos.get(i));
+            }
+        }
     }
 
     private void openChat() {

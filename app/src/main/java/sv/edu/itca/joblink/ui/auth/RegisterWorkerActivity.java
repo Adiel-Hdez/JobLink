@@ -64,8 +64,13 @@ public class RegisterWorkerActivity extends AppCompatActivity {
                     if (photoData == null) {
                         photoData = ImageStorageManager.saveImageToInternalStorage(this, uri, "portfolio");
                     }
-                    if (photoData != null) {
-                        portfolioPaths.add(photoData);
+                    if (photoData != null && activePortfolioSlot >= 1 && activePortfolioSlot <= 6) {
+                        int index = activePortfolioSlot - 1;
+                        while (portfolioPaths.size() <= index) {
+                            portfolioPaths.add("");
+                        }
+                        portfolioPaths.set(index, photoData);
+
                         ImageView slotView = getSlotImageView(activePortfolioSlot);
                         if (slotView != null) {
                             ImageStorageManager.loadImageIntoView(slotView, photoData);
@@ -90,8 +95,9 @@ public class RegisterWorkerActivity extends AppCompatActivity {
         });
 
         // Pre-fill fields if in editing mode
-        User current = JobLinkRepository.getInstance().getCurrentUser();
-        if (getIntent().getBooleanExtra("is_editing", false) && current != null) {
+        boolean isEditing = getIntent().getBooleanExtra("is_editing", false);
+        User current = isEditing ? JobLinkRepository.getInstance().getCurrentUser() : null;
+        if (isEditing && current != null) {
             binding.etWorkerName.setText(current.getName());
             binding.etWorkerEmail.setText(current.getEmail());
             binding.actvProfession.setText(current.getProfession());
@@ -101,6 +107,7 @@ public class RegisterWorkerActivity extends AppCompatActivity {
                 savedAvatarBase64OrPath = current.getProfilePhotoUrl();
                 ImageStorageManager.loadImageIntoView(binding.ivWorkerAvatar, savedAvatarBase64OrPath);
             }
+            loadExistingPortfolio(current);
         }
 
         // Image Pickers
@@ -144,17 +151,27 @@ public class RegisterWorkerActivity extends AppCompatActivity {
             User worker = new User(current != null ? current.getId() : null, name, email,
                     User.Role.WORKER, profession, "General", location, bio, 5.0, 0, true, "+503 7000-1111");
 
+            if (current != null && current.getWorkerProfileId() > 0) {
+                worker.setWorkerProfileId(current.getWorkerProfileId());
+            }
+
             if (savedAvatarBase64OrPath != null) {
                 worker.setProfilePhotoUrl(savedAvatarBase64OrPath);
             }
 
-            worker.setPortfolioPhotos(portfolioPaths);
+            List<String> cleanPhotos = new ArrayList<>();
+            for (String p : portfolioPaths) {
+                if (p != null && !p.trim().isEmpty()) {
+                    cleanPhotos.add(p);
+                }
+            }
+            worker.setPortfolioPhotos(cleanPhotos);
 
             JobLinkRepository.getInstance().registerUserInSupabase(worker, password, new JobLinkRepository.RepositoryCallback<User>() {
                 @Override
                 public void onSuccess(User result) {
                     new SessionManager(RegisterWorkerActivity.this).saveUserSession(result);
-                    uploadPortfolioToSupabase(1);
+                    uploadPortfolioToSupabase(result, cleanPhotos);
                     Toast.makeText(RegisterWorkerActivity.this, "¡Perfil de trabajador guardado con éxito!", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(RegisterWorkerActivity.this, MainActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -173,6 +190,39 @@ public class RegisterWorkerActivity extends AppCompatActivity {
                 }
             });
         });
+    }
+
+    private void loadExistingPortfolio(User user) {
+        if (user == null) return;
+        List<String> photos = user.getPortfolioPhotos();
+        if (photos != null && !photos.isEmpty()) {
+            displayPortfolioSlots(photos);
+        } else {
+            JobLinkRepository.getInstance().fetchPortfolioFromSupabase(user.getId(), new JobLinkRepository.RepositoryCallback<List<String>>() {
+                @Override
+                public void onSuccess(List<String> result) {
+                    if (result != null && !result.isEmpty()) {
+                        user.setPortfolioPhotos(result);
+                        displayPortfolioSlots(result);
+                    }
+                }
+
+                @Override
+                public void onError(String message) {}
+            });
+        }
+    }
+
+    private void displayPortfolioSlots(List<String> photos) {
+        portfolioPaths.clear();
+        for (int i = 0; i < photos.size() && i < 6; i++) {
+            String p = photos.get(i);
+            portfolioPaths.add(p);
+            ImageView slotView = getSlotImageView(i + 1);
+            if (slotView != null && p != null && !p.trim().isEmpty()) {
+                ImageStorageManager.loadImageIntoView(slotView, p);
+            }
+        }
     }
 
     private void setupPortfolioClickListeners() {
@@ -202,9 +252,37 @@ public class RegisterWorkerActivity extends AppCompatActivity {
         }
     }
 
-    private void uploadPortfolioToSupabase(int workerProfileId) {
-        for (String photoPath : portfolioPaths) {
-            PortafolioTrabajoDto dto = new PortafolioTrabajoDto(workerProfileId, "Trabajo Realizado", "Foto de portafolio", photoPath);
+    private void uploadPortfolioToSupabase(User workerUser, List<String> photos) {
+        if (workerUser == null || photos == null || photos.isEmpty()) return;
+        int profileId = workerUser.getWorkerProfileId();
+        if (profileId > 0) {
+            doUploadPortfolioItems(profileId, photos);
+        } else {
+            SupabaseClient.getApi().getPerfilTrabajadorByUsuarioId("eq." + workerUser.getId()).enqueue(new Callback<List<sv.edu.itca.joblink.data.remote.dto.PerfilTrabajadorDto>>() {
+                @Override
+                public void onResponse(Call<List<sv.edu.itca.joblink.data.remote.dto.PerfilTrabajadorDto>> call, Response<List<sv.edu.itca.joblink.data.remote.dto.PerfilTrabajadorDto>> response) {
+                    int pId = 1;
+                    if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                        if (response.body().get(0).id != null) {
+                            pId = response.body().get(0).id;
+                        }
+                    }
+                    workerUser.setWorkerProfileId(pId);
+                    doUploadPortfolioItems(pId, photos);
+                }
+
+                @Override
+                public void onFailure(Call<List<sv.edu.itca.joblink.data.remote.dto.PerfilTrabajadorDto>> call, Throwable t) {
+                    doUploadPortfolioItems(1, photos);
+                }
+            });
+        }
+    }
+
+    private void doUploadPortfolioItems(int profileId, List<String> photos) {
+        for (String photoPath : photos) {
+            if (photoPath == null || photoPath.trim().isEmpty()) continue;
+            PortafolioTrabajoDto dto = new PortafolioTrabajoDto(profileId, "Trabajo Realizado", "Foto de portafolio", photoPath);
             SupabaseClient.getApi().addPortafolioItem(dto).enqueue(new Callback<List<PortafolioTrabajoDto>>() {
                 @Override
                 public void onResponse(Call<List<PortafolioTrabajoDto>> call, Response<List<PortafolioTrabajoDto>> response) {}

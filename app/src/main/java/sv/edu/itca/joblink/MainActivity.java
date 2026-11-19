@@ -10,6 +10,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 
 import sv.edu.itca.joblink.databinding.ActivityMainBinding;
+import sv.edu.itca.joblink.repository.JobLinkRepository;
 import sv.edu.itca.joblink.ui.chat.ChatListFragment;
 import sv.edu.itca.joblink.ui.home.HomeFragment;
 import sv.edu.itca.joblink.ui.search.SearchFragment;
@@ -31,6 +32,13 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0);
             return insets;
         });
+
+        if (JobLinkRepository.getInstance().getCurrentUser() == null) {
+            sv.edu.itca.joblink.model.User savedUser = new sv.edu.itca.joblink.util.SessionManager(this).getUserSession();
+            if (savedUser != null) {
+                JobLinkRepository.getInstance().setCurrentUser(savedUser);
+            }
+        }
 
         // Default to HomeFragment
         if (savedInstanceState == null) {

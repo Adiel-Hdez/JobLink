@@ -66,8 +66,10 @@ public class WorkerAdapter extends RecyclerView.Adapter<WorkerAdapter.WorkerView
             binding.tvWorkerCardBio.setText(worker.getBio());
             binding.tvWorkerCardRating.setText(String.format(java.util.Locale.getDefault(), "%.1f", worker.getRating()));
 
-            if (worker.getProfilePhotoUrl() != null) {
+            if (worker.getProfilePhotoUrl() != null && !worker.getProfilePhotoUrl().isEmpty()) {
                 ImageStorageManager.loadImageIntoView(binding.ivWorkerCardAvatar, worker.getProfilePhotoUrl());
+            } else {
+                ImageStorageManager.resetAvatarToDefault(binding.ivWorkerCardAvatar);
             }
 
             if (worker.isPremium()) {

@@ -35,6 +35,7 @@ public class RegisterClientActivity extends AppCompatActivity {
                     if (savedAvatarBase64OrPath == null) {
                         savedAvatarBase64OrPath = ImageStorageManager.saveImageToInternalStorage(this, uri, "client_avatar");
                     }
+                    ImageStorageManager.loadImageIntoView(binding.ivClientAvatar, savedAvatarBase64OrPath);
                     Toast.makeText(this, "📷 Foto de perfil de cliente seleccionada", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -53,14 +54,20 @@ public class RegisterClientActivity extends AppCompatActivity {
             return insets;
         });
 
-        // Pre-fill fields if in editing mode
-        User current = JobLinkRepository.getInstance().getCurrentUser();
-        if (getIntent().getBooleanExtra("is_editing", false) && current != null) {
+        binding.ivClientAvatar.setOnClickListener(v -> openImagePicker());
+
+        boolean isEditing = getIntent().getBooleanExtra("is_editing", false);
+        User current = isEditing ? JobLinkRepository.getInstance().getCurrentUser() : null;
+        if (isEditing && current != null) {
             binding.etClientName.setText(current.getName());
             binding.etClientEmail.setText(current.getEmail());
             binding.etClientPhone.setText(current.getPhone());
             binding.etClientLocation.setText(current.getLocation());
             binding.btnGuardarCliente.setText("GUARDAR CAMBIOS DE PERFIL");
+            if (current.getProfilePhotoUrl() != null) {
+                savedAvatarBase64OrPath = current.getProfilePhotoUrl();
+                ImageStorageManager.loadImageIntoView(binding.ivClientAvatar, savedAvatarBase64OrPath);
+            }
         }
 
         binding.btnGuardarCliente.setOnClickListener(v -> {

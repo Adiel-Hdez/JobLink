@@ -40,6 +40,21 @@
 
             <!-- Name & Profession -->
             <TextView
+                android:id="@+id/tvPublicProfilePremiumBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_badge_orange"
+                android:backgroundTint="@color/rating_star"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:text="⭐ PROFESIONAL PREMIUM VIP"
+                android:textColor="@color/navy_primary"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <TextView
                 android:id="@+id/tvPublicProfileName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -155,6 +170,7 @@
                     android:layout_columnWeight="1"
                     android:layout_margin="4dp">
                     <ImageView
+                        android:id="@+id/ivPublicPortfolioSlot1"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:scaleType="centerCrop"
@@ -171,6 +187,7 @@
                     android:layout_columnWeight="1"
                     android:layout_margin="4dp">
                     <ImageView
+                        android:id="@+id/ivPublicPortfolioSlot2"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:scaleType="centerCrop"
@@ -187,6 +204,7 @@
                     android:layout_columnWeight="1"
                     android:layout_margin="4dp">
                     <ImageView
+                        android:id="@+id/ivPublicPortfolioSlot3"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:scaleType="centerCrop"
@@ -203,6 +221,7 @@
                     android:layout_columnWeight="1"
                     android:layout_margin="4dp">
                     <ImageView
+                        android:id="@+id/ivPublicPortfolioSlot4"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:scaleType="centerCrop"
@@ -219,6 +238,7 @@
                     android:layout_columnWeight="1"
                     android:layout_margin="4dp">
                     <ImageView
+                        android:id="@+id/ivPublicPortfolioSlot5"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:scaleType="centerCrop"
@@ -235,6 +255,7 @@
                     android:layout_columnWeight="1"
                     android:layout_margin="4dp">
                     <ImageView
+                        android:id="@+id/ivPublicPortfolioSlot6"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:scaleType="centerCrop"

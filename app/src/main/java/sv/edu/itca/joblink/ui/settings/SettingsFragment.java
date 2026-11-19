@@ -107,8 +107,10 @@ public class SettingsFragment extends Fragment {
             binding.tvSettingsName.setText(user.getName());
             binding.tvSettingsEmail.setText(user.getEmail());
 
-            if (user.getProfilePhotoUrl() != null) {
+            if (user.getProfilePhotoUrl() != null && !user.getProfilePhotoUrl().isEmpty()) {
                 ImageStorageManager.loadImageIntoView(binding.ivSettingsAvatar, user.getProfilePhotoUrl());
+            } else {
+                ImageStorageManager.resetAvatarToDefault(binding.ivSettingsAvatar);
             }
 
             if (user.isPremium()) {

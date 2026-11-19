@@ -33,6 +33,9 @@ public interface SupabaseApi {
     @GET("rest/v1/usuarios")
     Call<List<UsuarioDto>> getUsuarioById(@Query("id") String idEq);
 
+    @GET("rest/v1/usuarios")
+    Call<List<UsuarioDto>> getUsuariosByRole(@Query("rol") String rolEq);
+
     @POST("rest/v1/usuarios")
     Call<List<UsuarioDto>> createUsuario(@Body UsuarioDto dto);
 
@@ -43,15 +46,24 @@ public interface SupabaseApi {
     @GET("rest/v1/perfiles_trabajadores?select=*,usuarios(*),categorias_oficios(*)")
     Call<List<PerfilTrabajadorDto>> getPerfilesTrabajadores();
 
+    @GET("rest/v1/perfiles_trabajadores?select=*,usuarios(*),categorias_oficios(*)")
+    Call<List<PerfilTrabajadorDto>> getPerfilTrabajadorByUsuarioId(@Query("usuario_id") String usuarioIdEq);
+
     @POST("rest/v1/perfiles_trabajadores")
     Call<List<PerfilTrabajadorDto>> createPerfilTrabajador(@Body PerfilTrabajadorDto dto);
 
     @PATCH("rest/v1/perfiles_trabajadores")
     Call<List<PerfilTrabajadorDto>> updatePerfilTrabajador(@Query("id") String idEq, @Body PerfilTrabajadorDto dto);
 
+    @PATCH("rest/v1/perfiles_trabajadores")
+    Call<List<PerfilTrabajadorDto>> updatePerfilTrabajadorByUsuarioId(@Query("usuario_id") String usuarioIdEq, @Body PerfilTrabajadorDto dto);
+
     // 4. Portafolio de Trabajos
     @GET("rest/v1/portafolio_trabajos?select=*")
     Call<List<PortafolioTrabajoDto>> getPortafolioByTrabajador(@Query("trabajador_id") String trabajadorIdEq);
+
+    @GET("rest/v1/portafolio_trabajos?select=*")
+    Call<List<PortafolioTrabajoDto>> getTodosPortafolios();
 
     @POST("rest/v1/portafolio_trabajos")
     Call<List<PortafolioTrabajoDto>> addPortafolioItem(@Body PortafolioTrabajoDto dto);
@@ -79,6 +91,9 @@ public interface SupabaseApi {
     // 7. Mensajes
     @GET("rest/v1/mensajes?select=*")
     Call<List<MensajeDto>> getMensajesByConversacion(@Query("conversacion_id") String conversacionIdEq, @Query("order") String orderClause);
+
+    @GET("rest/v1/mensajes?select=*")
+    Call<List<MensajeDto>> getUltimoMensaje(@Query("conversacion_id") String conversacionIdEq, @Query("order") String orderClause, @Query("limit") int limit);
 
     @POST("rest/v1/mensajes")
     Call<List<MensajeDto>> sendMensaje(@Body MensajeDto dto);
