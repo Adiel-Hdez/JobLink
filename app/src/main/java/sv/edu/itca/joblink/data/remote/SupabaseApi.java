@@ -72,8 +72,20 @@ public interface SupabaseApi {
     @GET("rest/v1/solicitudes_trabajo?select=*")
     Call<List<SolicitudTrabajoDto>> getSolicitudesTrabajo();
 
+    @GET("rest/v1/solicitudes_trabajo?select=*")
+    Call<List<SolicitudTrabajoDto>> getSolicitudesOrUser(@Query("or") String orFilter);
+
+    @GET("rest/v1/solicitudes_trabajo?select=*")
+    Call<List<SolicitudTrabajoDto>> getSolicitudesByCliente(@Query("cliente_id") String clienteEq);
+
+    @GET("rest/v1/solicitudes_trabajo?select=*")
+    Call<List<SolicitudTrabajoDto>> getSolicitudesByTrabajador(@Query("trabajador_id") String trabajadorIdEq);
+
     @POST("rest/v1/solicitudes_trabajo")
     Call<List<SolicitudTrabajoDto>> createSolicitudTrabajo(@Body SolicitudTrabajoDto dto);
+
+    @PATCH("rest/v1/solicitudes_trabajo")
+    Call<List<SolicitudTrabajoDto>> updateSolicitudTrabajo(@Query("id") String idEq, @Body SolicitudTrabajoDto dto);
 
     // 6. Conversaciones
     @GET("rest/v1/conversaciones?select=*")
@@ -93,14 +105,23 @@ public interface SupabaseApi {
     Call<List<MensajeDto>> getMensajesByConversacion(@Query("conversacion_id") String conversacionIdEq, @Query("order") String orderClause);
 
     @GET("rest/v1/mensajes?select=*")
+    Call<List<MensajeDto>> getUnreadMensajesForUser(@Query("remitente_id") String remitenteNeq, @Query("leido") String leidoEq);
+
+    @GET("rest/v1/mensajes?select=*")
     Call<List<MensajeDto>> getUltimoMensaje(@Query("conversacion_id") String conversacionIdEq, @Query("order") String orderClause, @Query("limit") int limit);
 
     @POST("rest/v1/mensajes")
     Call<List<MensajeDto>> sendMensaje(@Body MensajeDto dto);
 
+    @PATCH("rest/v1/mensajes")
+    Call<List<MensajeDto>> markMensajesAsRead(@Query("conversacion_id") String conversacionIdEq, @Query("remitente_id") String remitenteNeq, @Body MensajeDto dto);
+
     // 8. Valoraciones y Reseñas
     @GET("rest/v1/valoraciones?select=*")
     Call<List<ValoracionDto>> getValoraciones();
+
+    @GET("rest/v1/valoraciones?select=*")
+    Call<List<ValoracionDto>> getValoracionesByTrabajador(@Query("trabajador_id") String trabajadorIdEq);
 
     @POST("rest/v1/valoraciones")
     Call<List<ValoracionDto>> createValoracion(@Body ValoracionDto dto);

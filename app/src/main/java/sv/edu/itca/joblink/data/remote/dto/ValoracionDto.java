@@ -41,4 +41,15 @@ public class ValoracionDto {
         this.calificacionComunicacion = calificacion;
         this.comentario = comentario;
     }
+
+    public ValoracionDto(Integer solicitudId, String clienteId, Integer trabajadorId, Integer calidad, Integer puntualidad, Integer comunicacion, String comentario, String fotoResultadoUrl) {
+        this.solicitudId = solicitudId;
+        this.clienteId = clienteId;
+        this.trabajadorId = trabajadorId;
+        this.calificacionCalidad = calidad;
+        this.calificacionPuntualidad = puntualidad;
+        this.calificacionComunicacion = comunicacion;
+        this.comentario = comentario;
+        this.fotoResultadoUrl = fotoResultadoUrl;
+    }
 }

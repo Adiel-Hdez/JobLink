@@ -21,21 +21,25 @@ public class SolicitudTrabajoDto {
     @SerializedName("presupuesto_estimado")
     public Double presupuestoEstimado;
 
+    @SerializedName("fecha_inicio_deseada")
+    public String fechaInicioDeseada;
+
     @SerializedName("estado")
-    public String estado; // 'pendiente', 'cotizado', 'en_curso', 'completado', 'rechazado'
+    public String estado; // 'Pendiente', 'En Curso', 'Rechazada', 'Completado'
 
     @SerializedName("porcentaje_avance")
     public Integer porcentajeAvance;
 
     public SolicitudTrabajoDto() {}
 
-    public SolicitudTrabajoDto(String clienteId, Integer trabajadorId, String tituloTrabajo, String descripcionProblema, Double presupuestoEstimado) {
+    public SolicitudTrabajoDto(String clienteId, Integer trabajadorId, String tituloTrabajo, String descripcionProblema, Double presupuestoEstimado, String fechaInicioDeseada) {
         this.clienteId = clienteId;
         this.trabajadorId = trabajadorId;
         this.tituloTrabajo = tituloTrabajo;
         this.descripcionProblema = descripcionProblema;
         this.presupuestoEstimado = presupuestoEstimado;
-        this.estado = "en_curso";
-        this.porcentajeAvance = 10;
+        this.fechaInicioDeseada = fechaInicioDeseada;
+        this.estado = "Pendiente";
+        this.porcentajeAvance = 0;
     }
 }

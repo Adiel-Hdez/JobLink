@@ -12,6 +12,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import java.util.List;
 
+import sv.edu.itca.joblink.data.remote.dto.ValoracionDto;
 import sv.edu.itca.joblink.databinding.ActivityWorkerProfileBinding;
 import sv.edu.itca.joblink.model.User;
 import sv.edu.itca.joblink.repository.JobLinkRepository;
@@ -107,6 +108,7 @@ public class WorkerProfileActivity extends AppCompatActivity {
         }
 
         loadPortfolioPhotos();
+        loadRealReviews();
 
         // Hide contact bar if viewing own profile
         if (currentUser != null && currentUser.getId() != null && currentUser.getId().equalsIgnoreCase(worker.getId())) {
@@ -141,6 +143,34 @@ public class WorkerProfileActivity extends AppCompatActivity {
                 public void onError(String message) {}
             });
         }
+    }
+
+    private void loadRealReviews() {
+        if (worker == null || worker.getWorkerProfileId() <= 0) return;
+
+        JobLinkRepository.getInstance().fetchValoracionesForTrabajador(worker.getWorkerProfileId(), new JobLinkRepository.RepositoryCallback<List<ValoracionDto>>() {
+            @Override
+            public void onSuccess(List<ValoracionDto> result) {
+                if (result != null && !result.isEmpty()) {
+                    double totalStars = 0;
+                    int count = 0;
+                    for (ValoracionDto v : result) {
+                        int quality = v.calificacionCalidad != null ? v.calificacionCalidad : 5;
+                        totalStars += quality;
+                        count++;
+                    }
+                    if (count > 0) {
+                        double avg = totalStars / count;
+                        worker.setRating(avg);
+                        worker.setReviewsCount(count);
+                        binding.tvPublicProfileRating.setText(String.format(java.util.Locale.getDefault(), "%.1f ★ (%d valoraciones)", avg, count));
+                    }
+                }
+            }
+
+            @Override
+            public void onError(String message) {}
+        });
     }
 
     private void displayPortfolioPhotos(List<String> photos) {

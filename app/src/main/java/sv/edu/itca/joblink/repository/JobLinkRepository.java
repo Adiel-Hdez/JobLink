@@ -19,6 +19,7 @@ import sv.edu.itca.joblink.data.remote.dto.PerfilTrabajadorDto;
 import sv.edu.itca.joblink.data.remote.dto.PortafolioTrabajoDto;
 import sv.edu.itca.joblink.data.remote.dto.SolicitudTrabajoDto;
 import sv.edu.itca.joblink.data.remote.dto.UsuarioDto;
+import sv.edu.itca.joblink.data.remote.dto.ValoracionDto;
 import sv.edu.itca.joblink.model.ChatConversation;
 import sv.edu.itca.joblink.model.ChatMessage;
 import sv.edu.itca.joblink.model.TradeCategory;
@@ -316,7 +317,9 @@ public class JobLinkRepository {
                     for (MensajeDto dto : response.body()) {
                         boolean isMine = dto.remitenteId != null && dto.remitenteId.equalsIgnoreCase(myUuid);
                         String timeStr = dto.fechaEnvio != null && dto.fechaEnvio.length() >= 16 ? dto.fechaEnvio.substring(11, 16) : "Ahora";
-                        list.add(new ChatMessage(String.valueOf(dto.id), dto.remitenteId, dto.contenido, timeStr, isMine));
+                        boolean isRead = Boolean.TRUE.equals(dto.leido);
+                        ChatMessage msg = new ChatMessage(String.valueOf(dto.id), dto.remitenteId, dto.contenido, timeStr, isMine, dto.imagenAdjuntaUrl, isRead);
+                        list.add(msg);
                     }
                     chatMessagesMap.put(conversationId, list);
                     if (callback != null) callback.onSuccess(list);
@@ -335,6 +338,10 @@ public class JobLinkRepository {
     }
 
     public void sendMensajeToSupabase(String conversationId, String text, RepositoryCallback<Boolean> callback) {
+        sendMensajeWithPhotoToSupabase(conversationId, text, null, callback);
+    }
+
+    public void sendMensajeWithPhotoToSupabase(String conversationId, String text, String photoBase64, RepositoryCallback<Boolean> callback) {
         if (currentUser == null || currentUser.getId() == null) {
             if (callback != null) callback.onError("Usuario no identificado");
             return;
@@ -343,12 +350,12 @@ public class JobLinkRepository {
         String myUuid = ensureValidUuid(currentUser.getId());
         String validConvUuid = ensureValidUuid(conversationId);
 
-        // Local update
         List<ChatMessage> list = getChatMessages(conversationId);
-        ChatMessage myMsg = new ChatMessage("m_" + System.currentTimeMillis(), myUuid, text, "Ahora", true);
+        ChatMessage myMsg = new ChatMessage("m_" + System.currentTimeMillis(), myUuid, text, "Ahora", true, photoBase64, false);
         list.add(myMsg);
 
         MensajeDto dto = new MensajeDto(validConvUuid, myUuid, text);
+        dto.imagenAdjuntaUrl = photoBase64;
 
         SupabaseClient.getApi().sendMensaje(dto).enqueue(new Callback<List<MensajeDto>>() {
             @Override
@@ -360,6 +367,22 @@ public class JobLinkRepository {
             public void onFailure(Call<List<MensajeDto>> call, Throwable t) {
                 if (callback != null) callback.onSuccess(true);
             }
+        });
+    }
+
+    public void markMensajesAsReadInSupabase(String conversationId) {
+        if (conversationId == null || currentUser == null || currentUser.getId() == null) return;
+        String myUuid = ensureValidUuid(currentUser.getId());
+        String convUuid = ensureValidUuid(conversationId);
+
+        MensajeDto patchDto = new MensajeDto();
+        patchDto.leido = true;
+
+        SupabaseClient.getApi().markMensajesAsRead("eq." + convUuid, "neq." + myUuid, patchDto).enqueue(new Callback<List<MensajeDto>>() {
+            @Override
+            public void onResponse(Call<List<MensajeDto>> call, Response<List<MensajeDto>> response) {}
+            @Override
+            public void onFailure(Call<List<MensajeDto>> call, Throwable t) {}
         });
     }
 
@@ -864,7 +887,8 @@ public class JobLinkRepository {
                 1,
                 order.getTitle(),
                 "Detalles de la solicitud desde el chat",
-                50.0
+                50.0,
+                "2026-11-20"
         );
 
         SupabaseClient.getApi().createSolicitudTrabajo(dto).enqueue(new Callback<List<SolicitudTrabajoDto>>() {
@@ -872,6 +896,168 @@ public class JobLinkRepository {
             public void onResponse(Call<List<SolicitudTrabajoDto>> call, Response<List<SolicitudTrabajoDto>> response) {}
             @Override
             public void onFailure(Call<List<SolicitudTrabajoDto>> call, Throwable t) {}
+        });
+    }
+
+    public void fetchSolicitudesTrabajoFromSupabase(RepositoryCallback<List<SolicitudTrabajoDto>> callback) {
+        if (currentUser == null || currentUser.getId() == null) {
+            if (callback != null) callback.onSuccess(new ArrayList<>());
+            return;
+        }
+
+        String myUuid = ensureValidUuid(currentUser.getId());
+        int myWorkerProfileId = currentUser.getWorkerProfileId();
+
+        String orFilter;
+        if (myWorkerProfileId > 0) {
+            orFilter = "(cliente_id.eq." + myUuid + ",trabajador_id.eq." + myWorkerProfileId + ")";
+        } else {
+            orFilter = "(cliente_id.eq." + myUuid + ")";
+        }
+
+        SupabaseClient.getApi().getSolicitudesOrUser(orFilter).enqueue(new Callback<List<SolicitudTrabajoDto>>() {
+            @Override
+            public void onResponse(Call<List<SolicitudTrabajoDto>> call, Response<List<SolicitudTrabajoDto>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    if (callback != null) callback.onSuccess(response.body());
+                } else {
+                    SupabaseClient.getApi().getSolicitudesTrabajo().enqueue(new Callback<List<SolicitudTrabajoDto>>() {
+                        @Override
+                        public void onResponse(Call<List<SolicitudTrabajoDto>> c, Response<List<SolicitudTrabajoDto>> r) {
+                            if (r.isSuccessful() && r.body() != null) {
+                                if (callback != null) callback.onSuccess(r.body());
+                            } else {
+                                if (callback != null) callback.onSuccess(new ArrayList<>());
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<List<SolicitudTrabajoDto>> c, Throwable t) {
+                            if (callback != null) callback.onSuccess(new ArrayList<>());
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<SolicitudTrabajoDto>> call, Throwable t) {
+                if (callback != null) callback.onSuccess(new ArrayList<>());
+            }
+        });
+    }
+
+    public void createSolicitudTrabajoInSupabase(SolicitudTrabajoDto dto, RepositoryCallback<Boolean> callback) {
+        SupabaseClient.getApi().createSolicitudTrabajo(dto).enqueue(new Callback<List<SolicitudTrabajoDto>>() {
+            @Override
+            public void onResponse(Call<List<SolicitudTrabajoDto>> call, Response<List<SolicitudTrabajoDto>> response) {
+                if (callback != null) callback.onSuccess(true);
+            }
+
+            @Override
+            public void onFailure(Call<List<SolicitudTrabajoDto>> call, Throwable t) {
+                if (callback != null) callback.onSuccess(true);
+            }
+        });
+    }
+
+    public void updateSolicitudEstadoInSupabase(int solicitudId, String nuevoEstado, RepositoryCallback<Boolean> callback) {
+        SolicitudTrabajoDto patchDto = new SolicitudTrabajoDto();
+        patchDto.estado = nuevoEstado;
+
+        SupabaseClient.getApi().updateSolicitudTrabajo("eq." + solicitudId, patchDto).enqueue(new Callback<List<SolicitudTrabajoDto>>() {
+            @Override
+            public void onResponse(Call<List<SolicitudTrabajoDto>> call, Response<List<SolicitudTrabajoDto>> response) {
+                if (callback != null) callback.onSuccess(true);
+            }
+
+            @Override
+            public void onFailure(Call<List<SolicitudTrabajoDto>> call, Throwable t) {
+                if (callback != null) callback.onSuccess(true);
+            }
+        });
+    }
+
+    public void updateSolicitudAvanceInSupabase(int solicitudId, int avance, RepositoryCallback<Boolean> callback) {
+        SolicitudTrabajoDto patchDto = new SolicitudTrabajoDto();
+        patchDto.porcentajeAvance = avance;
+        if (avance >= 100) {
+            patchDto.estado = "Completado";
+        }
+
+        SupabaseClient.getApi().updateSolicitudTrabajo("eq." + solicitudId, patchDto).enqueue(new Callback<List<SolicitudTrabajoDto>>() {
+            @Override
+            public void onResponse(Call<List<SolicitudTrabajoDto>> call, Response<List<SolicitudTrabajoDto>> response) {
+                if (callback != null) callback.onSuccess(true);
+            }
+
+            @Override
+            public void onFailure(Call<List<SolicitudTrabajoDto>> call, Throwable t) {
+                if (callback != null) callback.onSuccess(true);
+            }
+        });
+    }
+
+    public void fetchValoracionesForTrabajador(int trabajadorProfileId, RepositoryCallback<List<ValoracionDto>> callback) {
+        SupabaseClient.getApi().getValoracionesByTrabajador("eq." + trabajadorProfileId).enqueue(new Callback<List<ValoracionDto>>() {
+            @Override
+            public void onResponse(Call<List<ValoracionDto>> call, Response<List<ValoracionDto>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    if (callback != null) callback.onSuccess(response.body());
+                } else {
+                    if (callback != null) callback.onSuccess(new ArrayList<>());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<ValoracionDto>> call, Throwable t) {
+                if (callback != null) callback.onSuccess(new ArrayList<>());
+            }
+        });
+    }
+
+    public void getUnreadMessagesCount(RepositoryCallback<Integer> callback) {
+        if (currentUser == null || currentUser.getId() == null) {
+            if (callback != null) callback.onSuccess(0);
+            return;
+        }
+
+        String myUuid = ensureValidUuid(currentUser.getId());
+        SupabaseClient.getApi().getUnreadMensajesForUser("neq." + myUuid, "eq.false").enqueue(new Callback<List<MensajeDto>>() {
+            @Override
+            public void onResponse(Call<List<MensajeDto>> call, Response<List<MensajeDto>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    if (callback != null) callback.onSuccess(response.body().size());
+                } else {
+                    if (callback != null) callback.onSuccess(0);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<MensajeDto>> call, Throwable t) {
+                if (callback != null) callback.onSuccess(0);
+            }
+        });
+    }
+
+    public void getPendingSolicitudesCount(RepositoryCallback<Integer> callback) {
+        fetchSolicitudesTrabajoFromSupabase(new RepositoryCallback<List<SolicitudTrabajoDto>>() {
+            @Override
+            public void onSuccess(List<SolicitudTrabajoDto> result) {
+                int pending = 0;
+                if (result != null) {
+                    for (SolicitudTrabajoDto s : result) {
+                        if (s.estado != null && "Pendiente".equalsIgnoreCase(s.estado.trim())) {
+                            pending++;
+                        }
+                    }
+                }
+                if (callback != null) callback.onSuccess(pending);
+            }
+
+            @Override
+            public void onError(String message) {
+                if (callback != null) callback.onSuccess(0);
+            }
         });
     }
 }

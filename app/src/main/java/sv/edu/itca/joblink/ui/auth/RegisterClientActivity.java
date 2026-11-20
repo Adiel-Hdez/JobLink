@@ -1,9 +1,9 @@
 package sv.edu.itca.joblink.ui.auth;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -14,10 +14,13 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.io.ByteArrayOutputStream;
+
 import sv.edu.itca.joblink.MainActivity;
 import sv.edu.itca.joblink.databinding.ActivityRegisterClientBinding;
 import sv.edu.itca.joblink.model.User;
 import sv.edu.itca.joblink.repository.JobLinkRepository;
+import sv.edu.itca.joblink.util.ImagePickerHelper;
 import sv.edu.itca.joblink.util.ImageStorageManager;
 import sv.edu.itca.joblink.util.SessionManager;
 
@@ -26,7 +29,7 @@ public class RegisterClientActivity extends AppCompatActivity {
     private ActivityRegisterClientBinding binding;
     private String savedAvatarBase64OrPath;
 
-    private final ActivityResultLauncher<Intent> imagePickerLauncher = registerForActivityResult(
+    private final ActivityResultLauncher<Intent> galleryLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null && result.getData().getData() != null) {
@@ -36,7 +39,24 @@ public class RegisterClientActivity extends AppCompatActivity {
                         savedAvatarBase64OrPath = ImageStorageManager.saveImageToInternalStorage(this, uri, "client_avatar");
                     }
                     ImageStorageManager.loadImageIntoView(binding.ivClientAvatar, savedAvatarBase64OrPath);
-                    Toast.makeText(this, "📷 Foto de perfil de cliente seleccionada", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "📷 Foto de perfil seleccionada", Toast.LENGTH_SHORT).show();
+                }
+            }
+    );
+
+    private final ActivityResultLauncher<Intent> cameraLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Bitmap photo = (Bitmap) result.getData().getExtras().get("data");
+                    if (photo != null) {
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        photo.compress(Bitmap.CompressFormat.JPEG, 75, baos);
+                        byte[] bytes = baos.toByteArray();
+                        savedAvatarBase64OrPath = "data:image/jpeg;base64," + android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP);
+                        ImageStorageManager.loadImageIntoView(binding.ivClientAvatar, savedAvatarBase64OrPath);
+                        Toast.makeText(this, "📷 Foto de perfil tomada", Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
     );
@@ -54,7 +74,17 @@ public class RegisterClientActivity extends AppCompatActivity {
             return insets;
         });
 
-        binding.ivClientAvatar.setOnClickListener(v -> openImagePicker());
+        binding.ivClientAvatar.setOnClickListener(v -> ImagePickerHelper.showImageSourceDialog(this, new ImagePickerHelper.OnOptionSelectedListener() {
+            @Override
+            public void onCameraSelected() {
+                cameraLauncher.launch(ImagePickerHelper.createCameraIntent());
+            }
+
+            @Override
+            public void onGallerySelected() {
+                galleryLauncher.launch(ImagePickerHelper.createGalleryIntent());
+            }
+        }));
 
         boolean isEditing = getIntent().getBooleanExtra("is_editing", false);
         User current = isEditing ? JobLinkRepository.getInstance().getCurrentUser() : null;
@@ -128,10 +158,5 @@ public class RegisterClientActivity extends AppCompatActivity {
                 }
             });
         });
-    }
-
-    private void openImagePicker() {
-        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        imagePickerLauncher.launch(intent);
     }
 }

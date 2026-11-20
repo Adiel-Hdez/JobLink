@@ -54,7 +54,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="¡BIENVENIDO CARLOS G.!"
+            android:text="¡BIENVENIDO!"
             android:textColor="@color/navy_primary"
             android:textSize="22sp"
             android:textStyle="bold" />
@@ -119,7 +119,7 @@
                         android:id="@+id/tvDashboardName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Carlos G."
+                        android:text="Usuario"
                         android:textColor="@color/navy_primary"
                         android:textSize="18sp"
                         android:textStyle="bold" />
@@ -129,7 +129,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Carpintero"
+                        android:text="Profesión"
                         android:textColor="@color/text_secondary"
                         android:textSize="15sp" />
 
@@ -150,7 +150,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="4dp"
-                            android:text="4.8"
+                            android:text="5.0"
                             android:textColor="@color/text_primary"
                             android:textSize="15sp"
                             android:textStyle="bold" />
@@ -160,7 +160,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
-                            android:text="(35 trabajos)"
+                            android:text="(0 trabajos)"
                             android:textColor="@color/text_muted"
                             android:textSize="13sp" />
                     </LinearLayout>
@@ -192,6 +192,7 @@
 
                 <!-- Item 1 -->
                 <LinearLayout
+                    android:id="@+id/layoutUnreadMessages"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
@@ -202,10 +203,11 @@
                         android:src="@drawable/ic_chat"
                         app:tint="@color/orange_accent" />
                     <TextView
+                        android:id="@+id/tvUnreadMessagesCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="12dp"
-                        android:text="3 Mensajes Nuevos"
+                        android:text="0 Mensajes Nuevos"
                         android:textColor="@color/text_primary"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -213,6 +215,7 @@
 
                 <!-- Item 2 -->
                 <LinearLayout
+                    android:id="@+id/layoutPendingRequests"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
@@ -224,10 +227,11 @@
                         android:src="@drawable/ic_user_search"
                         app:tint="@color/teal_primary" />
                     <TextView
+                        android:id="@+id/tvPendingRequestsCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="12dp"
-                        android:text="2 Nuevas Solicitudes de Cotización"
+                        android:text="0 Nuevas Solicitudes de Cotización"
                         android:textColor="@color/text_primary"
                         android:textSize="15sp" />
                 </LinearLayout>
@@ -245,10 +249,11 @@
                         android:src="@drawable/ic_notifications"
                         app:tint="@color/orange_accent" />
                     <TextView
+                        android:id="@+id/tvPendingConfirmCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="12dp"
-                        android:text="1 Trabajo por Confirmar"
+                        android:text="Sin Trabajos Pendientes por Confirmar"
                         android:textColor="@color/text_primary"
                         android:textSize="15sp" />
                 </LinearLayout>
@@ -266,90 +271,117 @@
             android:textStyle="bold" />
 
         <LinearLayout
+            android:id="@+id/layoutJobsInProgressContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:layout_marginTop="10dp">
 
-            <!-- Work 1 -->
-            <com.google.android.material.card.MaterialCardView
-                style="@style/JobLinkCard"
-                android:layout_width="0dp"
+            <TextView
+                android:id="@+id/tvNoJobsInProgress"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="6dp">
+                android:text="No hay trabajos en curso actualmente"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
+                android:gravity="center"
+                android:padding="16dp" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Mesa para Pedro"
-                        android:textColor="@color/navy_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="al 50% completado"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-
-                    <ProgressBar
-                        style="?android:attr/progressBarStyleHorizontal"
-                        android:layout_width="match_parent"
-                        android:layout_height="8dp"
-                        android:layout_marginTop="8dp"
-                        android:progress="50"
-                        android:progressDrawable="@drawable/bg_badge_orange" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Work 2 -->
-            <com.google.android.material.card.MaterialCardView
-                style="@style/JobLinkCard"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:id="@+id/layoutJobsInProgressCards"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="6dp">
+                android:orientation="horizontal"
+                android:visibility="gone">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <!-- Work 1 -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardWorkInProgress1"
+                    style="@style/JobLinkCard"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="12dp">
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Reparación Silla"
-                        android:textColor="@color/navy_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="al 80% completado"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-
-                    <ProgressBar
-                        style="?android:attr/progressBarStyleHorizontal"
+                    <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="8dp"
-                        android:layout_marginTop="8dp"
-                        android:progress="80"
-                        android:progressDrawable="@drawable/bg_badge_orange" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:id="@+id/tvWorkTitle1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Trabajo 1"
+                            android:textColor="@color/navy_primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvWorkProgress1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="al 0% completado"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+
+                        <ProgressBar
+                            android:id="@+id/pbWork1"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="8dp"
+                            android:layout_marginTop="8dp"
+                            android:progress="0"
+                            android:progressDrawable="@drawable/bg_badge_orange" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Work 2 -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardWorkInProgress2"
+                    style="@style/JobLinkCard"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:id="@+id/tvWorkTitle2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Trabajo 2"
+                            android:textColor="@color/navy_primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvWorkProgress2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="al 0% completado"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+
+                        <ProgressBar
+                            android:id="@+id/pbWork2"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="8dp"
+                            android:layout_marginTop="8dp"
+                            android:progress="0"
+                            android:progressDrawable="@drawable/bg_badge_orange" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
         </LinearLayout>
 
         <!-- ACCESO RÁPIDO Section -->

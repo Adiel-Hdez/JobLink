@@ -23,7 +23,9 @@ import sv.edu.itca.joblink.repository.JobLinkRepository;
 public class RateWorkerActivity extends AppCompatActivity {
 
     private ActivityRateWorkerBinding binding;
-    private String workerName = "Carlos G.";
+    private String workerName = "Profesional";
+    private int solicitudId = 1;
+    private int trabajadorId = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,17 +43,24 @@ public class RateWorkerActivity extends AppCompatActivity {
         if (getIntent().hasExtra("worker_name")) {
             workerName = getIntent().getStringExtra("worker_name");
         }
+        if (getIntent().hasExtra("solicitud_id")) {
+            solicitudId = getIntent().getIntExtra("solicitud_id", 1);
+        }
+        if (getIntent().hasExtra("trabajador_id")) {
+            trabajadorId = getIntent().getIntExtra("trabajador_id", 1);
+        }
 
         binding.tvRateWorkerName.setText("Calificar a " + workerName);
 
         binding.btnSubmitRating.setOnClickListener(v -> {
             int stars = (int) binding.rbWorkerRating.getRating();
+            if (stars == 0) stars = 5;
             String comment = binding.etRateComment.getText() != null ? binding.etRateComment.getText().toString().trim() : "";
 
             User currentUser = JobLinkRepository.getInstance().getCurrentUser();
-            String clientId = currentUser != null && currentUser.getId() != null ? currentUser.getId() : "client_anon";
+            String clientId = currentUser != null && currentUser.getId() != null ? currentUser.getId() : JobLinkRepository.ensureValidUuid(null);
 
-            ValoracionDto dto = new ValoracionDto(1, clientId, 1, stars, comment);
+            ValoracionDto dto = new ValoracionDto(solicitudId, clientId, trabajadorId, stars, stars, stars, comment, null);
             SupabaseClient.getApi().createValoracion(dto).enqueue(new Callback<List<ValoracionDto>>() {
                 @Override
                 public void onResponse(Call<List<ValoracionDto>> call, Response<List<ValoracionDto>> response) {

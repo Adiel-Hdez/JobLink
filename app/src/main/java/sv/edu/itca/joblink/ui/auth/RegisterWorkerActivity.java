@@ -1,9 +1,9 @@
 package sv.edu.itca.joblink.ui.auth;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -16,6 +16,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,11 +25,13 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import sv.edu.itca.joblink.MainActivity;
 import sv.edu.itca.joblink.data.remote.SupabaseClient;
+import sv.edu.itca.joblink.data.remote.dto.PerfilTrabajadorDto;
 import sv.edu.itca.joblink.data.remote.dto.PortafolioTrabajoDto;
 import sv.edu.itca.joblink.databinding.ActivityRegisterWorkerBinding;
 import sv.edu.itca.joblink.model.TradeCategory;
 import sv.edu.itca.joblink.model.User;
 import sv.edu.itca.joblink.repository.JobLinkRepository;
+import sv.edu.itca.joblink.util.ImagePickerHelper;
 import sv.edu.itca.joblink.util.ImageStorageManager;
 import sv.edu.itca.joblink.util.SessionManager;
 
@@ -39,12 +42,11 @@ public class RegisterWorkerActivity extends AppCompatActivity {
     private int activePortfolioSlot = 0;
     private final List<String> portfolioPaths = new ArrayList<>();
 
-    private final ActivityResultLauncher<Intent> avatarPickerLauncher = registerForActivityResult(
+    private final ActivityResultLauncher<Intent> avatarGalleryLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null && result.getData().getData() != null) {
                     Uri uri = result.getData().getData();
-                    // Convert to Base64 so it can be saved in Supabase text column AND loaded across devices!
                     savedAvatarBase64OrPath = ImageStorageManager.convertUriToBase64(this, uri);
                     if (savedAvatarBase64OrPath == null) {
                         savedAvatarBase64OrPath = ImageStorageManager.saveImageToInternalStorage(this, uri, "avatar");
@@ -55,7 +57,24 @@ public class RegisterWorkerActivity extends AppCompatActivity {
             }
     );
 
-    private final ActivityResultLauncher<Intent> portfolioPickerLauncher = registerForActivityResult(
+    private final ActivityResultLauncher<Intent> avatarCameraLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Bitmap photo = (Bitmap) result.getData().getExtras().get("data");
+                    if (photo != null) {
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        photo.compress(Bitmap.CompressFormat.JPEG, 75, baos);
+                        byte[] bytes = baos.toByteArray();
+                        savedAvatarBase64OrPath = "data:image/jpeg;base64," + android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP);
+                        ImageStorageManager.loadImageIntoView(binding.ivWorkerAvatar, savedAvatarBase64OrPath);
+                        Toast.makeText(this, "📷 Foto de perfil tomada", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+    );
+
+    private final ActivityResultLauncher<Intent> portfolioGalleryLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null && result.getData().getData() != null) {
@@ -64,22 +83,42 @@ public class RegisterWorkerActivity extends AppCompatActivity {
                     if (photoData == null) {
                         photoData = ImageStorageManager.saveImageToInternalStorage(this, uri, "portfolio");
                     }
-                    if (photoData != null && activePortfolioSlot >= 1 && activePortfolioSlot <= 6) {
-                        int index = activePortfolioSlot - 1;
-                        while (portfolioPaths.size() <= index) {
-                            portfolioPaths.add("");
-                        }
-                        portfolioPaths.set(index, photoData);
+                    savePortfolioSlotPhoto(photoData);
+                }
+            }
+    );
 
-                        ImageView slotView = getSlotImageView(activePortfolioSlot);
-                        if (slotView != null) {
-                            ImageStorageManager.loadImageIntoView(slotView, photoData);
-                        }
-                        Toast.makeText(this, "🖼️ Foto agregada al portafolio", Toast.LENGTH_SHORT).show();
+    private final ActivityResultLauncher<Intent> portfolioCameraLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Bitmap photo = (Bitmap) result.getData().getExtras().get("data");
+                    if (photo != null) {
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        photo.compress(Bitmap.CompressFormat.JPEG, 75, baos);
+                        byte[] bytes = baos.toByteArray();
+                        String photoData = "data:image/jpeg;base64," + android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP);
+                        savePortfolioSlotPhoto(photoData);
                     }
                 }
             }
     );
+
+    private void savePortfolioSlotPhoto(String photoData) {
+        if (photoData != null && activePortfolioSlot >= 1 && activePortfolioSlot <= 6) {
+            int index = activePortfolioSlot - 1;
+            while (portfolioPaths.size() <= index) {
+                portfolioPaths.add("");
+            }
+            portfolioPaths.set(index, photoData);
+
+            ImageView slotView = getSlotImageView(activePortfolioSlot);
+            if (slotView != null) {
+                ImageStorageManager.loadImageIntoView(slotView, photoData);
+            }
+            Toast.makeText(this, "🖼️ Foto agregada al portafolio", Toast.LENGTH_SHORT).show();
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,7 +133,6 @@ public class RegisterWorkerActivity extends AppCompatActivity {
             return insets;
         });
 
-        // Pre-fill fields if in editing mode
         boolean isEditing = getIntent().getBooleanExtra("is_editing", false);
         User current = isEditing ? JobLinkRepository.getInstance().getCurrentUser() : null;
         if (isEditing && current != null) {
@@ -110,11 +148,17 @@ public class RegisterWorkerActivity extends AppCompatActivity {
             loadExistingPortfolio(current);
         }
 
-        // Image Pickers
-        binding.ivWorkerAvatar.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-            avatarPickerLauncher.launch(intent);
-        });
+        binding.ivWorkerAvatar.setOnClickListener(v -> ImagePickerHelper.showImageSourceDialog(this, new ImagePickerHelper.OnOptionSelectedListener() {
+            @Override
+            public void onCameraSelected() {
+                avatarCameraLauncher.launch(ImagePickerHelper.createCameraIntent());
+            }
+
+            @Override
+            public void onGallerySelected() {
+                avatarGalleryLauncher.launch(ImagePickerHelper.createGalleryIntent());
+            }
+        }));
 
         setupPortfolioClickListeners();
         setupProfessionDropdown();
@@ -236,8 +280,17 @@ public class RegisterWorkerActivity extends AppCompatActivity {
 
     private void openPortfolioPicker(int slot) {
         activePortfolioSlot = slot;
-        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        portfolioPickerLauncher.launch(intent);
+        ImagePickerHelper.showImageSourceDialog(this, new ImagePickerHelper.OnOptionSelectedListener() {
+            @Override
+            public void onCameraSelected() {
+                portfolioCameraLauncher.launch(ImagePickerHelper.createCameraIntent());
+            }
+
+            @Override
+            public void onGallerySelected() {
+                portfolioGalleryLauncher.launch(ImagePickerHelper.createGalleryIntent());
+            }
+        });
     }
 
     private ImageView getSlotImageView(int slot) {
@@ -258,9 +311,9 @@ public class RegisterWorkerActivity extends AppCompatActivity {
         if (profileId > 0) {
             doUploadPortfolioItems(profileId, photos);
         } else {
-            SupabaseClient.getApi().getPerfilTrabajadorByUsuarioId("eq." + workerUser.getId()).enqueue(new Callback<List<sv.edu.itca.joblink.data.remote.dto.PerfilTrabajadorDto>>() {
+            SupabaseClient.getApi().getPerfilTrabajadorByUsuarioId("eq." + workerUser.getId()).enqueue(new Callback<List<PerfilTrabajadorDto>>() {
                 @Override
-                public void onResponse(Call<List<sv.edu.itca.joblink.data.remote.dto.PerfilTrabajadorDto>> call, Response<List<sv.edu.itca.joblink.data.remote.dto.PerfilTrabajadorDto>> response) {
+                public void onResponse(Call<List<PerfilTrabajadorDto>> call, Response<List<PerfilTrabajadorDto>> response) {
                     int pId = 1;
                     if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                         if (response.body().get(0).id != null) {
@@ -272,7 +325,7 @@ public class RegisterWorkerActivity extends AppCompatActivity {
                 }
 
                 @Override
-                public void onFailure(Call<List<sv.edu.itca.joblink.data.remote.dto.PerfilTrabajadorDto>> call, Throwable t) {
+                public void onFailure(Call<List<PerfilTrabajadorDto>> call, Throwable t) {
                     doUploadPortfolioItems(1, photos);
                 }
             });

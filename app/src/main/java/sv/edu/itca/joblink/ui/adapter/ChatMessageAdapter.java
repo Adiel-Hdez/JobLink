@@ -1,6 +1,7 @@
 package sv.edu.itca.joblink.ui.adapter;
 
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -13,6 +14,7 @@ import sv.edu.itca.joblink.databinding.ItemChatBubbleSentBinding;
 import sv.edu.itca.joblink.model.ChatMessage;
 import sv.edu.itca.joblink.model.User;
 import sv.edu.itca.joblink.repository.JobLinkRepository;
+import sv.edu.itca.joblink.util.ImageStorageManager;
 
 public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -76,8 +78,20 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         }
 
         public void bind(ChatMessage msg) {
-            binding.tvMessageSentText.setText(msg.getText());
+            if (msg.getText() != null && !msg.getText().trim().isEmpty()) {
+                binding.tvMessageSentText.setVisibility(View.VISIBLE);
+                binding.tvMessageSentText.setText(msg.getText());
+            } else {
+                binding.tvMessageSentText.setVisibility(View.GONE);
+            }
             binding.tvMessageSentTime.setText(msg.getTime());
+
+            if (msg.getImageAttachmentUrl() != null && !msg.getImageAttachmentUrl().trim().isEmpty()) {
+                binding.ivSentAttachment.setVisibility(View.VISIBLE);
+                ImageStorageManager.loadImageIntoView(binding.ivSentAttachment, msg.getImageAttachmentUrl());
+            } else {
+                binding.ivSentAttachment.setVisibility(View.GONE);
+            }
         }
     }
 
@@ -90,8 +104,20 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         }
 
         public void bind(ChatMessage msg) {
-            binding.tvMessageReceivedText.setText(msg.getText());
+            if (msg.getText() != null && !msg.getText().trim().isEmpty()) {
+                binding.tvMessageReceivedText.setVisibility(View.VISIBLE);
+                binding.tvMessageReceivedText.setText(msg.getText());
+            } else {
+                binding.tvMessageReceivedText.setVisibility(View.GONE);
+            }
             binding.tvMessageReceivedTime.setText(msg.getTime());
+
+            if (msg.getImageAttachmentUrl() != null && !msg.getImageAttachmentUrl().trim().isEmpty()) {
+                binding.ivReceivedAttachment.setVisibility(View.VISIBLE);
+                ImageStorageManager.loadImageIntoView(binding.ivReceivedAttachment, msg.getImageAttachmentUrl());
+            } else {
+                binding.ivReceivedAttachment.setVisibility(View.GONE);
+            }
         }
     }
 }

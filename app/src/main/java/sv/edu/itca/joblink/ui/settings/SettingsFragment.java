@@ -9,6 +9,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 
 import sv.edu.itca.joblink.databinding.FragmentSettingsBinding;
@@ -20,6 +21,7 @@ import sv.edu.itca.joblink.ui.auth.RegisterWorkerActivity;
 import sv.edu.itca.joblink.ui.profile.PremiumSubscriptionActivity;
 import sv.edu.itca.joblink.ui.profile.RateWorkerActivity;
 import sv.edu.itca.joblink.util.ImageStorageManager;
+import sv.edu.itca.joblink.util.LocaleHelper;
 import sv.edu.itca.joblink.util.SessionManager;
 
 public class SettingsFragment extends Fragment {
@@ -39,12 +41,15 @@ public class SettingsFragment extends Fragment {
 
         updateUserUI();
 
+        binding.btnChangeLanguage.setOnClickListener(v -> showLanguageSelectionDialog());
+
         binding.btnOpenPremium.setOnClickListener(v -> {
             User user = JobLinkRepository.getInstance().getCurrentUser();
             if (user != null) {
                 if (user.isPremium()) {
                     user.setPremium(false);
                     new SessionManager(getContext()).saveUserSession(user);
+                    JobLinkRepository.getInstance().updateWorkerPremiumStatusInSupabase(user.getId(), false, null);
                     Toast.makeText(getContext(), "Suscripción Premium cancelada", Toast.LENGTH_SHORT).show();
                     updateUserUI();
                 } else {
@@ -101,43 +106,92 @@ public class SettingsFragment extends Fragment {
         updateUserUI();
     }
 
+    private void showLanguageSelectionDialog() {
+        if (getContext() == null) return;
+
+        CharSequence[] languages = new CharSequence[]{
+                "🇪🇸 Español",
+                "🇺🇸 English",
+                "🇵🇹 Português",
+                "🇫🇷 Français",
+                "🇪🇸 Català"
+        };
+
+        String currentCode = LocaleHelper.getLanguage(getContext());
+        int defaultIndex = 0;
+        if ("en".equalsIgnoreCase(currentCode)) defaultIndex = 1;
+        else if ("pt".equalsIgnoreCase(currentCode)) defaultIndex = 2;
+        else if ("fr".equalsIgnoreCase(currentCode)) defaultIndex = 3;
+        else if ("ca".equalsIgnoreCase(currentCode)) defaultIndex = 4;
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("Seleccionar Idioma / Select Language");
+        builder.setSingleChoiceItems(languages, defaultIndex, (dialog, which) -> {
+            String selectedCode = "es";
+            switch (which) {
+                case 1: selectedCode = "en"; break;
+                case 2: selectedCode = "pt"; break;
+                case 3: selectedCode = "fr"; break;
+                case 4: selectedCode = "ca"; break;
+                case 0:
+                default:
+                    selectedCode = "es";
+                    break;
+            }
+
+            LocaleHelper.setLocale(getContext(), selectedCode);
+            Toast.makeText(getContext(), "🌐 Idioma actualizado a " + LocaleHelper.getLanguageDisplayName(selectedCode), Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+
+            if (getActivity() != null) {
+                getActivity().recreate();
+            }
+        });
+
+        builder.setNegativeButton("Cancelar", (dialog, which) -> dialog.dismiss());
+        builder.show();
+    }
+
     private void updateUserUI() {
         User user = JobLinkRepository.getInstance().getCurrentUser();
-        if (user != null && binding != null) {
-            binding.tvSettingsName.setText(user.getName());
-            binding.tvSettingsEmail.setText(user.getEmail());
+        if (binding != null) {
+            String currentLang = LocaleHelper.getLanguage(getContext());
+            binding.tvCurrentLanguage.setText("Idioma actual: " + LocaleHelper.getLanguageDisplayName(currentLang));
 
-            if (user.getProfilePhotoUrl() != null && !user.getProfilePhotoUrl().isEmpty()) {
-                ImageStorageManager.loadImageIntoView(binding.ivSettingsAvatar, user.getProfilePhotoUrl());
-            } else {
-                ImageStorageManager.resetAvatarToDefault(binding.ivSettingsAvatar);
-            }
+            if (user != null) {
+                binding.tvSettingsName.setText(user.getName());
+                binding.tvSettingsEmail.setText(user.getEmail());
 
-            if (user.isPremium()) {
-                binding.tvSettingsName.setText(user.getName() + " ⭐ VIP");
-            }
-
-            if (user.getRole() == User.Role.WORKER) {
-                binding.tvSettingsRole.setText("Rol Activo: TRABAJADOR (" + user.getProfession() + ")");
-                binding.btnSwitchRole.setText("CAMBIAR A MODO CLIENTE");
-                binding.btnEditProfile.setText("EDITAR PERFIL DE TRABAJADOR");
-
-                // Show Premium card only for workers
-                binding.cardPremium.setVisibility(View.VISIBLE);
-                if (user.isPremium()) {
-                    binding.btnOpenPremium.setText("CANCELAR SUSCRIPCIÓN PREMIUM");
+                if (user.getProfilePhotoUrl() != null && !user.getProfilePhotoUrl().isEmpty()) {
+                    ImageStorageManager.loadImageIntoView(binding.ivSettingsAvatar, user.getProfilePhotoUrl());
                 } else {
-                    binding.btnOpenPremium.setText("VER BENEFICIOS Y SUSCRIBIRME");
+                    ImageStorageManager.resetAvatarToDefault(binding.ivSettingsAvatar);
                 }
-            } else {
-                binding.tvSettingsRole.setText("Rol Activo: CLIENTE");
-                binding.btnSwitchRole.setText("CAMBIAR A MODO TRABAJADOR");
-                binding.btnEditProfile.setText("EDITAR PERFIL DE CLIENTE");
 
-                // Hide Premium card for clients
-                binding.cardPremium.setVisibility(View.GONE);
+                if (user.isPremium()) {
+                    binding.tvSettingsName.setText(user.getName() + " ⭐ VIP");
+                }
+
+                if (user.getRole() == User.Role.WORKER) {
+                    binding.tvSettingsRole.setText("Rol Activo: TRABAJADOR (" + user.getProfession() + ")");
+                    binding.btnSwitchRole.setText("CAMBIAR A MODO CLIENTE");
+                    binding.btnEditProfile.setText("EDITAR PERFIL DE TRABAJADOR");
+
+                    binding.cardPremium.setVisibility(View.VISIBLE);
+                    if (user.isPremium()) {
+                        binding.btnOpenPremium.setText("CANCELAR SUSCRIPCIÓN PREMIUM");
+                    } else {
+                        binding.btnOpenPremium.setText("VER BENEFICIOS Y SUSCRIBIRME");
+                    }
+                } else {
+                    binding.tvSettingsRole.setText("Rol Activo: CLIENTE");
+                    binding.btnSwitchRole.setText("CAMBIAR A MODO TRABAJADOR");
+                    binding.btnEditProfile.setText("EDITAR PERFIL DE CLIENTE");
+
+                    binding.cardPremium.setVisibility(View.GONE);
+                }
+                binding.btnEditProfile.setVisibility(View.VISIBLE);
             }
-            binding.btnEditProfile.setVisibility(View.VISIBLE);
         }
     }
 
